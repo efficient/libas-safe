@@ -1,4 +1,6 @@
+/bench
 /bin
+/dlfcn.rs
 
 *.o
 *.so
