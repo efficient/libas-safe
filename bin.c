@@ -4,6 +4,7 @@
 #include <dlfcn.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 extern void *_GLOBAL_OFFSET_TABLE_[];
 extern void *data_start[];
