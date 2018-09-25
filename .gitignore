@@ -1,6 +1,7 @@
 /bench
 /bin
 /dlfcn.rs
+/mman.rs
 
 *.o
 *.so
