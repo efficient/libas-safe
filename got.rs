@@ -86,6 +86,11 @@ impl GOT {
 
 		for entry in entries.to_mut() {
 			if let Some(info) = dladdr(*entry) {
+				let library = info.filename.to_bytes_with_nul().rsplit(|it| *it == b'/').next().unwrap();
+				if library.starts_with(b"ld") {
+					continue;
+				}
+
 				if let Some(symbol) = info.symbol {
 					let handle = handles
 						.entry(info.filename)
