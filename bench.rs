@@ -6,7 +6,7 @@ mod mman;
 fn main() {
 	use got::GOT;
 
-	let shadow = GOT::default().clone().unwrap();
+	let shadow = GOT::new().unwrap().clone().unwrap();
 	unsafe {
 		shadow.install();
 	}
