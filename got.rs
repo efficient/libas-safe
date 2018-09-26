@@ -15,13 +15,13 @@ pub struct GOT {
 }
 
 impl GOT {
-	fn installed() -> MutexGuard<'static, Option<GOT>> {
+	fn installed() -> MutexGuard<'static, GOT> {
 		use std::sync::Mutex;
 
-		static mut INSTALLED: Option<Mutex<Option<GOT>>> = None;
+		static mut INSTALLED: Option<Mutex<GOT>> = None;
 
 		unsafe {
-			INSTALLED.get_or_insert_with(|| Mutex::new(None))
+			INSTALLED.get_or_insert_with(|| Mutex::new(Self::new().unwrap()))
 		}.lock().unwrap_or_else(|or| or.into_inner())
 	}
 
@@ -111,17 +111,13 @@ impl GOT {
 		})
 	}
 
-	/// Returns the previously-installed `GOT`, or `None` if this has never before been invoked.
-	pub unsafe fn install(self) -> Option<Self> {
+	pub unsafe fn install(self) -> Self {
 		use dl::global_offset_table_mut;
-
-		global_offset_table_mut().copy_from_slice(&self.entries);
+		use std::mem::replace;
 
 		let mut installed = Self::installed();
-		let old = installed.take();
-		*installed = Some(self);
-
-		old
+		global_offset_table_mut().copy_from_slice(&self.entries);
+		replace(&mut installed, self)
 	}
 }
 
