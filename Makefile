@@ -1,7 +1,7 @@
 BINDGEN := bindgen
 RUSTC := rustc
 
-override BINDFLAGS := --raw-line "\#![allow(dead_code, non_camel_case_types, non_upper_case_globals)]" $(BINDFLAGS)
+override BINDFLAGS := --raw-line "\#![allow(dead_code, non_camel_case_types, non_snake_case, non_upper_case_globals)]" $(BINDFLAGS)
 override CFLAGS := -std=c99 -g -Og -Wall -Wextra -Wpedantic $(CFLAGS)
 override RUSTFLAGS := -g -O $(RUSTFLAGS)
 
@@ -10,6 +10,7 @@ bin: private LDLIBS += -ldl -llib
 bin: liblib.so
 
 bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
+bench: private RUSTFLAGS += --test
 bench: dl.rs dlfcn.rs got.rs mman.rs liblib.so
 
 bin.o: private CPPFLAGS += -D_GNU_SOURCE

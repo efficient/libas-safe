@@ -1,7 +1,14 @@
+#![feature(test)]
+
+extern crate test;
+
 mod dl;
 mod dlfcn;
 mod got;
 mod mman;
+
+use got::GOT;
+use test::Bencher;
 
 #[link(name = "lib")]
 extern "C" {
@@ -9,9 +16,18 @@ extern "C" {
 	fn set(_: bool);
 }
 
-fn main() {
-	use got::GOT;
+#[bench]
+fn base(lo: &mut Bencher) {
+	lo.iter(|| GOT::new().unwrap());
+}
 
+#[bench]
+fn clone_drop(lo: &mut Bencher) {
+	let base = GOT::new().unwrap();
+	lo.iter(|| base.clone());
+}
+
+fn main() {
 	assert!(! unsafe {
 		get()
 	});
