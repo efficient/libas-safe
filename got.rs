@@ -111,21 +111,17 @@ impl GOT {
 		})
 	}
 
-	pub unsafe fn install(self) -> bool {
+	/// Returns the previously-installed `GOT`, or `None` if this has never before been invoked.
+	pub unsafe fn install(self) -> Option<Self> {
 		use dl::global_offset_table_mut;
 
-		let mut installed = None;
-		if let Cow::Owned(entries) = &self.entries {
-			installed = Some(Self::installed());
-			global_offset_table_mut().copy_from_slice(entries);
-		}
+		global_offset_table_mut().copy_from_slice(&self.entries);
 
-		if let Some(mut installed) = installed {
-			*installed = Some(self);
-			true
-		} else {
-			false
-		}
+		let mut installed = Self::installed();
+		let old = installed.take();
+		*installed = Some(self);
+
+		old
 	}
 }
 
