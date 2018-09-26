@@ -9,8 +9,8 @@ bin: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN
 bin: private LDLIBS += -ldl -llib
 bin: liblib.so
 
-bench: private LDFLAGS += -znow
-bench: dl.rs dlfcn.rs got.rs mman.rs
+bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
+bench: dl.rs dlfcn.rs got.rs mman.rs liblib.so
 
 bin.o: private CPPFLAGS += -D_GNU_SOURCE
 bin.o: lib.h
