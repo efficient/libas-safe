@@ -17,14 +17,22 @@ extern "C" {
 }
 
 #[bench]
-fn base(lo: &mut Bencher) {
+fn clone_drop(lo: &mut Bencher) {
 	lo.iter(|| GOT::new().unwrap());
 }
 
 #[bench]
-fn clone_drop(lo: &mut Bencher) {
-	let base = GOT::new().unwrap();
-	lo.iter(|| base.clone());
+fn install_uninstall(lo: &mut Bencher) {
+	let mut got = Some(GOT::new().unwrap());
+	lo.iter(|| if let Some(got) = got.take() {
+		unsafe {
+			got.install();
+		}
+	} else {
+		got = unsafe {
+			GOT::uninstall()
+		};
+	});
 }
 
 fn main() {
@@ -38,10 +46,8 @@ fn main() {
 		get()
 	});
 
-	let base = GOT::new().unwrap();
-	let replace = base.clone().unwrap();
 	unsafe {
-		replace.install();
+		GOT::new().unwrap().install();
 	}
 
 	assert!(! unsafe {
@@ -61,7 +67,7 @@ fn main() {
 	});
 
 	unsafe {
-		base.install();
+		GOT::uninstall();
 	}
 
 	assert!(unsafe {
