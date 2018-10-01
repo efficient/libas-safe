@@ -1,20 +1,12 @@
 use dl::Addr;
 use dl::Handle;
 use dl::Namespace;
+use dl::Result;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::ffi::CStr;
-use std::ffi::CString;
-use std::fmt::Debug;
-use std::fmt::Error as FmtError;
-use std::fmt::Formatter;
-use std::iter::FromIterator;
-use std::ops::Deref;
-use std::result::Result as StdResult;
 use std::sync::Mutex;
-
-type Result<T> = StdResult<T, Error>;
 
 struct Table {
 	symbols: Cow<'static, [(usize, &'static CStr, &'static CStr)]>,
@@ -41,11 +33,9 @@ impl GOT {
 		for (index, filename, symbol) in &*symbols {
 			let handle = handles.entry(filename).or_insert_with(||
 				dlmopen(&mut namespace, filename, Flags::NOW)
-			).clone().map_err(|or| Error {
-				result: or,
-				namespace,
-				handles: distill(handles.drain()),
-			})?;
+			).clone().map_err(|or|
+				drop_handles(unwrap_values(handles.drain()), namespace).err().unwrap_or(or)
+			)?;
 			match dlsym(handle, symbol) {
 				Ok(ay) => entries[*index] = ay,
 				Err(or) => eprintln!("{:?}", or),
@@ -53,7 +43,7 @@ impl GOT {
 		}
 
 		let symbols = Cow::Borrowed(symbols);
-		let handles = distill(handles);
+		let handles = unwrap_values(handles).collect();
 		Ok(Self {
 			namespace,
 			handles,
@@ -152,46 +142,21 @@ impl Singleton {
 
 impl Drop for GOT {
 	fn drop(&mut self) {
-		use dl::dlclose;
-
-		for handle in self.handles.drain(..) {
-			dlclose(handle).unwrap();
-		}
-		Singleton::handle().recycle.lock().unwrap().push(self.namespace)
+		drop_handles(self.handles.drain(..), self.namespace).unwrap();
 	}
 }
 
-pub struct Error {
-	result: CString,
-	namespace: Namespace,
-	handles: VecDeque<Handle>,
+fn unwrap_values<K, V>(map: impl IntoIterator<Item = (K, impl IntoIterator<Item = V>)>) -> impl Iterator<Item = V> {
+	map.into_iter().flat_map(|(_, val)| val)
 }
 
-impl Debug for Error {
-	fn fmt(&self, f: &mut Formatter) -> StdResult<(), FmtError> {
-		write!(f, "{:?}", &self.result)
+fn drop_handles<T: Iterator<Item = Handle>>(handles: T, namespace: Namespace) -> Result<()> {
+	use dl::dlclose;
+
+	for handle in handles {
+		dlclose(handle)?;
 	}
-}
+	Singleton::handle().recycle.lock().unwrap().push(namespace);
 
-impl Deref for Error {
-	type Target = CString;
-
-	fn deref(&self) -> &Self::Target {
-		&self.result
-	}
-}
-
-impl Drop for Error {
-	fn drop(&mut self) {
-		use dl::dlclose;
-
-		for handle in self.handles.drain(..) {
-			dlclose(handle).unwrap();
-		}
-		Singleton::handle().recycle.lock().unwrap().push(self.namespace)
-	}
-}
-
-fn distill<K, V, E: Debug, I: IntoIterator<Item = (K, StdResult<V, E>)>, C: FromIterator<V>>(map: I) -> C {
-	map.into_iter().map(|(_, val)| val.unwrap()).collect()
+	Ok(())
 }
