@@ -4,6 +4,7 @@ use dl::Namespace;
 use dl::Result;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::ffi::CStr;
 use std::sync::Mutex;
@@ -103,6 +104,29 @@ impl Singleton {
 		static mut SINGLETON: Option<Singleton> = None;
 
 		INIT.call_once(|| {
+			let blacklist: [&[_]; 17] = [
+				b"__libc_calloc\0",
+				b"__libc_free\0",
+				b"__libc_malloc\0",
+				b"__libc_pvalloc\0",
+				b"__libc_realloc\0",
+				b"__libc_valloc\0",
+				b"aligned_alloc\0",
+				b"calloc\0",
+				b"cfree\0",
+				b"free\0",
+				b"malloc\0",
+				b"malloc_usable_size\0",
+				b"memalign\0",
+				b"posix_memalign\0",
+				b"pvalloc\0",
+				b"realloc\0",
+				b"valloc\0",
+			];
+			let blacklist: HashSet<_> = blacklist.into_iter().map(|fun|
+				CStr::from_bytes_with_nul(fun).unwrap()
+			).collect();
+
 			let mut symbols = Vec::new();
 			let entries = Vec::from(global_offset_table()).into_boxed_slice();
 			for (index, entry) in entries.iter().enumerate() {
@@ -110,7 +134,7 @@ impl Singleton {
 					if let Some(symbol) = info.symbol {
 						let library = info.filename.to_bytes_with_nul()
 							.rsplit(|it| *it == b'/').next().unwrap();
-						if ! library.starts_with(b"ld") {
+						if ! library.starts_with(b"ld") && ! blacklist.contains(symbol) {
 							symbols.push((index, info.filename, symbol));
 						}
 					}
