@@ -73,9 +73,10 @@ impl GOT {
 		let old = installed.take();
 		let got = global_offset_table_mut();
 		if FIRST {
+			let mut size = size_of_val(got);
 			let got = got.as_ptr() as usize;
 			let page = got & !0xfffusize;
-			let size = got - page + size_of_val(&got);
+			size += got - page;
 			if mprotect(page as _, size, (PROT_READ | PROT_WRITE) as _) != 0 {
 				panic!(Error::last_os_error());
 			}
