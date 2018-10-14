@@ -13,14 +13,20 @@ bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
 bench: private RUSTFLAGS += --test
 bench: dl.rs dlfcn.rs got.rs link.rs mman.rs liblib.so
 
+test: private LDFLAGS += -Wl,-R,\$$ORIGIN
+test: libhook.so
+
+libhook.so: hook_internal.o
+
 bin.o: private CPPFLAGS += -D_GNU_SOURCE
 bin.o: lib.h
 dlfcn.rs: private CPPFLAGS += -D_GNU_SOURCE
+hook.o: private CFLAGS += -fpic
 lib.o: lib.h
 
 .PHONY: clean
 clean:
-	$(RM) bench bin dlfcn.rs link.rs mman.rs *.o *.so
+	$(RM) bench bin test dlfcn.rs link.rs mman.rs *.o *.so
 
 %: %.rs
 	$(RUSTC) -Clink-args="$(LDFLAGS)" $(RUSTFLAGS) $< $(LDLIBS)
