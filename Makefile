@@ -5,8 +5,8 @@ override BINDFLAGS := --raw-line "\#![allow(dead_code, non_camel_case_types, non
 override CFLAGS := -std=c99 -g -Og -Wall -Wextra -Wpedantic $(CFLAGS)
 override RUSTFLAGS := -g -O $(RUSTFLAGS)
 
-bin: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN
-bin: private LDLIBS += -ldl -llib
+bin: private LDFLAGS += -Wl,-R,\$$ORIGIN
+bin: private LDLIBS += -ldl
 bin: liblib.so
 
 bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
