@@ -22,6 +22,7 @@ bin.o: private CPPFLAGS += -D_GNU_SOURCE
 bin.o: lib.h
 dlfcn.rs: private CPPFLAGS += -D_GNU_SOURCE
 hook.o: private CFLAGS += -fpic
+link.rs: private BINDFLAGS += --no-rustfmt-bindings
 lib.o: lib.h
 
 .PHONY: clean
