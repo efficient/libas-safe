@@ -11,7 +11,7 @@ bin: liblib.so
 
 bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
 bench: private RUSTFLAGS += --test
-bench: dl.rs dlfcn.rs got.rs mman.rs liblib.so
+bench: dl.rs dlfcn.rs got.rs link.rs mman.rs liblib.so
 
 bin.o: private CPPFLAGS += -D_GNU_SOURCE
 bin.o: lib.h
@@ -20,7 +20,7 @@ lib.o: lib.h
 
 .PHONY: clean
 clean:
-	$(RM) bench bin dlfcn.rs mman.rs *.o *.so
+	$(RM) bench bin dlfcn.rs link.rs mman.rs *.o *.so
 
 %: %.rs
 	$(RUSTC) -Clink-args="$(LDFLAGS)" $(RUSTFLAGS) $< $(LDLIBS)

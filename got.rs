@@ -24,21 +24,17 @@ pub struct GOT {
 impl GOT {
 	pub fn new() -> Result<Self> {
 		use dl::Flags;
-		use dl::dladdr;
 		use dl::dlmopen;
-		use dl::dlsym;
 
 		let template = Singleton::handle();
 		let mut namespace = template.namespace();
 		let mut handles = HashMap::new();
 		let symbols = &*template.original.symbols;
 		let mut entries = template.original.entries.clone();
-		for (index, filename, symbol, offset) in &*symbols {
+		for (index, filename, _, offset) in &*symbols {
 			let (_, base) = handles.entry(filename).or_insert_with(|| {
 				let handle = dlmopen(&mut namespace, filename, Flags::LAZY)?;
-				let symbol = dlsym(handle, symbol)?;
-				let info = dladdr(symbol).unwrap();
-				Ok((handle, info.base))
+				Ok((handle, handle.base()))
 			}).clone().map_err(|or|
 				drop_handles(unwrap_values(handles.drain()).map(|(left, _)| left), namespace).err().unwrap_or(or)
 			)?;
@@ -134,10 +130,10 @@ impl Singleton {
 			let entries = Vec::from(global_offset_table()).into_boxed_slice();
 			for (index, entry) in entries.iter().enumerate() {
 				if let Some(info) = dladdr(*entry) {
+					let library = info.filename.to_bytes_with_nul().rsplit(|it| *it == b'/').next().unwrap();
+					let rtld = library.starts_with(b"ld");
 					if let Some(symbol) = info.symbol {
-						let library = info.filename.to_bytes_with_nul()
-							.rsplit(|it| *it == b'/').next().unwrap();
-						if ! library.starts_with(b"ld") && ! blacklist.contains(symbol) {
+						if ! rtld && ! blacklist.contains(symbol) {
 							symbols.push((index, info.filename, symbol, info.address - info.base));
 						}
 					}

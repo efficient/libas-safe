@@ -2,6 +2,7 @@
 /bin
 /dlfcn.rs
 /mman.rs
+/link.rs
 
 *.o
 *.so

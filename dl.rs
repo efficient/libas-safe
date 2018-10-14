@@ -239,6 +239,24 @@ impl Flags {
 #[derive(Clone, Copy)]
 pub struct Handle (*mut c_void);
 
+impl Handle {
+	pub fn base(&self) -> Addr {
+		use link::link_map;
+		use std::slice;
+
+		let Handle (this) = *self;
+		let this: *mut link_map = this as _;
+		let this = unsafe {
+			&*this
+		};
+		let this: *const u8 = this.l_addr as _;
+		assert!(unsafe {
+			slice::from_raw_parts(this.offset(1), 3)
+		} == b"ELF");
+		Addr (this as _)
+	}
+}
+
 #[derive(Clone, Copy)]
 pub struct Info {
 	pub filename: &'static CStr,

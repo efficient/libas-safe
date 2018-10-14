@@ -5,6 +5,7 @@ extern crate test;
 mod dl;
 mod dlfcn;
 mod got;
+mod link;
 mod mman;
 
 use got::GOT;
