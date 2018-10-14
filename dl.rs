@@ -5,7 +5,9 @@ use dlfcn::RTLD_NOW;
 use dlfcn::Lmid_t;
 use std::ffi::CStr;
 use std::ffi::CString;
+use std::ops::Add;
 use std::ops::Deref;
+use std::ops::Sub;
 use std::os::raw::c_uint;
 use std::os::raw::c_void;
 use std::result::Result as StdResult;
@@ -141,12 +143,32 @@ pub unsafe fn global_offset_table_mut() -> &'static mut [Addr] {
 #[repr(transparent)]
 pub struct Addr (pub *const c_void);
 
+impl Add<Offset> for Addr {
+	type Output = Self;
+
+	fn add(self, that: Offset) -> Self::Output {
+		let Addr (this) = self;
+		let Offset (that) = that;
+		Addr ((this as usize + that) as _)
+	}
+}
+
 impl Deref for Addr {
 	type Target = *const c_void;
 
 	fn deref(&self) -> &Self::Target {
 		let Addr (addr) = self;
 		addr
+	}
+}
+
+impl Sub for Addr {
+	type Output = Offset;
+
+	fn sub(self, that: Addr) -> Self::Output {
+		let Addr (this) = self;
+		let Addr (that) = that;
+		Offset (this as usize - that as usize)
 	}
 }
 
@@ -232,4 +254,16 @@ pub struct Namespace (Lmid_t);
 impl Namespace {
 	pub const BASE: Self = Namespace (LM_ID_BASE as _);
 	pub const NEW: Self = Namespace (LM_ID_NEWLM as _);
+}
+
+#[derive(Clone, Copy)]
+pub struct Offset (pub usize);
+
+impl Deref for Offset {
+	type Target = usize;
+
+	fn deref(&self) -> &Self::Target {
+		let Offset (offset) = self;
+		offset
+	}
 }

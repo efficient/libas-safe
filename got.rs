@@ -1,6 +1,7 @@
 use dl::Addr;
 use dl::Handle;
 use dl::Namespace;
+use dl::Offset;
 use dl::Result;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -10,7 +11,7 @@ use std::ffi::CStr;
 use std::sync::Mutex;
 
 struct Table {
-	symbols: Cow<'static, [(usize, &'static CStr, &'static CStr)]>,
+	symbols: Cow<'static, [(usize, &'static CStr, &'static CStr, Offset)]>,
 	entries: Box<[Addr]>,
 }
 
@@ -23,6 +24,7 @@ pub struct GOT {
 impl GOT {
 	pub fn new() -> Result<Self> {
 		use dl::Flags;
+		use dl::dladdr;
 		use dl::dlmopen;
 		use dl::dlsym;
 
@@ -31,20 +33,20 @@ impl GOT {
 		let mut handles = HashMap::new();
 		let symbols = &*template.original.symbols;
 		let mut entries = template.original.entries.clone();
-		for (index, filename, symbol) in &*symbols {
-			let handle = handles.entry(filename).or_insert_with(||
-				dlmopen(&mut namespace, filename, Flags::NOW)
-			).clone().map_err(|or|
-				drop_handles(unwrap_values(handles.drain()), namespace).err().unwrap_or(or)
+		for (index, filename, symbol, offset) in &*symbols {
+			let (_, base) = handles.entry(filename).or_insert_with(|| {
+				let handle = dlmopen(&mut namespace, filename, Flags::LAZY)?;
+				let symbol = dlsym(handle, symbol)?;
+				let info = dladdr(symbol).unwrap();
+				Ok((handle, info.base))
+			}).clone().map_err(|or|
+				drop_handles(unwrap_values(handles.drain()).map(|(left, _)| left), namespace).err().unwrap_or(or)
 			)?;
-			match dlsym(handle, symbol) {
-				Ok(ay) => entries[*index] = ay,
-				Err(or) => eprintln!("{:?}", or),
-			}
+			entries[*index] = base + *offset;
 		}
 
 		let symbols = Cow::Borrowed(symbols);
-		let handles = unwrap_values(handles).collect();
+		let handles = unwrap_values(handles).map(|(left, _)| left).collect();
 		Ok(Self {
 			namespace,
 			handles,
@@ -136,7 +138,7 @@ impl Singleton {
 						let library = info.filename.to_bytes_with_nul()
 							.rsplit(|it| *it == b'/').next().unwrap();
 						if ! library.starts_with(b"ld") && ! blacklist.contains(symbol) {
-							symbols.push((index, info.filename, symbol));
+							symbols.push((index, info.filename, symbol, info.address - info.base));
 						}
 					}
 				}
