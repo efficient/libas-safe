@@ -13,6 +13,10 @@ bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
 bench: private RUSTFLAGS += --test
 bench: dl.rs dlfcn.rs got.rs link.rs mman.rs liblib.so
 
+rel: private LDFLAGS += -Wl,-R,\$$ORIGIN
+rel: private LDLIBS += -ldl
+rel: librela.so
+
 test: private LDFLAGS += -Wl,-R,\$$ORIGIN
 test: libhook.so
 
@@ -24,10 +28,12 @@ dlfcn.rs: private CPPFLAGS += -D_GNU_SOURCE
 hook.o: private CFLAGS += -fpic
 link.rs: private BINDFLAGS += --no-rustfmt-bindings
 lib.o: lib.h
+rel.o: private CFLAGS += -Wno-pedantic
+rela.o: private CPPFLAGS += -D_GNU_SOURCE
 
 .PHONY: clean
 clean:
-	$(RM) bench bin test dlfcn.rs link.rs mman.rs *.o *.so
+	$(RM) bench bin rel test dlfcn.rs link.rs mman.rs *.o *.so
 
 %: %.rs
 	$(RUSTC) -Clink-args="$(LDFLAGS)" $(RUSTFLAGS) $< $(LDLIBS)

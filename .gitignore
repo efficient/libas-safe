@@ -3,6 +3,7 @@
 /dlfcn.rs
 /mman.rs
 /link.rs
+/rel
 /test
 
 *.o
