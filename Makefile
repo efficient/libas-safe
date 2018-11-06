@@ -5,10 +5,6 @@ override BINDFLAGS := --raw-line "\#![allow(dead_code, non_camel_case_types, non
 override CFLAGS := -std=c99 -g -Og -Wall -Wextra -Wpedantic $(CFLAGS)
 override RUSTFLAGS := -g -O $(RUSTFLAGS)
 
-bin: private LDFLAGS += -Wl,-R,\$$ORIGIN
-bin: private LDLIBS += -ldl
-bin: liblib.so
-
 bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
 bench: private RUSTFLAGS += --test
 bench: dl.rs dlfcn.rs got.rs link.rs mman.rs liblib.so
@@ -17,15 +13,7 @@ rel: private LDFLAGS += -Wl,-R,\$$ORIGIN
 rel: private LDLIBS += -ldl
 rel: librela.so
 
-test: private LDFLAGS += -Wl,-R,\$$ORIGIN
-test: libhook.so
-
-libhook.so: hook_internal.o
-
-bin.o: private CPPFLAGS += -D_GNU_SOURCE
-bin.o: lib.h
 dlfcn.rs: private CPPFLAGS += -D_GNU_SOURCE
-hook.o: private CFLAGS += -fpic
 link.rs: private BINDFLAGS += --no-rustfmt-bindings
 lib.o: lib.h
 rel.o: private CFLAGS += -Wno-pedantic
@@ -33,7 +21,7 @@ rela.o: private CPPFLAGS += -D_GNU_SOURCE
 
 .PHONY: clean
 clean:
-	$(RM) bench bin rel test dlfcn.rs link.rs mman.rs *.o *.so
+	$(RM) bench rel dlfcn.rs link.rs mman.rs *.o *.so
 
 %: %.rs
 	$(RUSTC) -Clink-args="$(LDFLAGS)" $(RUSTFLAGS) $< $(LDLIBS)
