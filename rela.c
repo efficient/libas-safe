@@ -16,6 +16,18 @@ static Lmid_t min(Lmid_t left, Lmid_t right) {
 // already recognized, it need not do anything; however, we must also maintain a mapping from link
 // maps to lists of caller addresses so we can invalidate such entries in case their libraries are
 // later unloaded.
+// TODO: This function should call another public fixup function that instead takes a link map.  If
+//       that function recognizes its argument as either a library that has already been fixed up or
+//       one located in an ancillary namespace, it need not do anything.
+// TODO: The current design leaves each namespace with its own copy of libc and libpthread (not to
+//       mention libdl).  There needs to be a whitelist function that loads a copy of the library
+//       into every namespace using RTLD_LAZY, RTLD_GLOBAL, and RTLD_LOCAL, then clobbers the GOT of
+//       each with either a copy of the primary GOT for that library or the repeated address of a
+//       function that *calls* (instead of indirect-jumping) to the address stored at the
+//       appropriate index in the primary GOT for that library.  It should provide support for
+//       running a hook function afterward so that the caller can set up preemption checks.
+// TODO: Instead of a thread-local flag, we should use a thread-local *counter* to disable
+//       preemption so it doesn't reenable until we've come out of the last nested call.
 void fixup(void *caller, ElfW(Dyn) *dynamic, ElfW(Addr) *global_offset_table) {
 	assert(dynamic != _DYNAMIC);
 	assert(global_offset_table != _GLOBAL_OFFSET_TABLE_);
@@ -25,6 +37,8 @@ void fixup(void *caller, ElfW(Dyn) *dynamic, ElfW(Addr) *global_offset_table) {
 	int succ = dladdr(caller, &dli);
 	assert(succ);
 	assert(dli.dli_fname && "Info structure contains no filename");
+
+	// TODO: We could just do this part with dladdr1().
 
 	// Get a handle to the global link map.  This will be used to search for the specific link
 	// map corresponding to the shared object found above, and also as a fallback in case the
@@ -112,6 +126,15 @@ void fixup(void *caller, ElfW(Dyn) *dynamic, ElfW(Addr) *global_offset_table) {
 	Lmid_t count = LM_ID_NEWLM;
 	// Iterate over each PLT relocation, looking up its name and the shared object containing
 	// it, then opening as many copies of that library as possible.
+	// TODO: We should be able to avoid many of these lookups by dlopen()'ing the library using
+	//       RTLD_NOW and RTLD_NOLOAD, then iterating over the GOT in parallel with relocations.
+	// TODO: In practice, we could probably get away with just counting the relocation entries
+	//       that have distinct symbol table indices.  It looks like the symbol table's length
+	//       is only accessible from the ELF header, but we can probably find that at the base
+	//       address returned by the initial call to dladdr().
+	// TODO: We need to be able to locate the PLT, which we'll probably want to do by finding
+	//       two original GOT entries and taking first differences?  Of course, this will fail
+	//       if (almost) all of the library's symbols have already been resolved...
 	end = rel + relsz / sizeof *end;
 	for(const ElfW(Rela) *r = rel; r != end; ++r) {
 		size_t sym = ELF64_R_SYM(r->r_info);
