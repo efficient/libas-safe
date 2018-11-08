@@ -2,6 +2,7 @@
 /dlfcn.rs
 /mman.rs
 /link.rs
+/refcount
 /rel
 
 *.o

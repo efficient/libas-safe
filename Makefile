@@ -9,6 +9,9 @@ bench: private LDFLAGS += -L. -Wl,-R,\$$ORIGIN -znow
 bench: private RUSTFLAGS += --test
 bench: dl.rs dlfcn.rs got.rs link.rs mman.rs liblib.so
 
+refcount: private CPPFLAGS += -D_GNU_SOURCE
+refcount: private LDLIBS += -ldl
+
 rel: private LDFLAGS += -Wl,-R,\$$ORIGIN
 rel: private LDLIBS += -ldl
 rel: librela.so
@@ -21,7 +24,7 @@ rela.o: private CPPFLAGS += -D_GNU_SOURCE
 
 .PHONY: clean
 clean:
-	$(RM) bench rel dlfcn.rs link.rs mman.rs *.o *.so
+	$(RM) bench refcount rel dlfcn.rs link.rs mman.rs *.o *.so
 
 %: %.rs
 	$(RUSTC) -Clink-args="$(LDFLAGS)" $(RUSTFLAGS) $< $(LDLIBS)
