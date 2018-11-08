@@ -128,10 +128,15 @@ void fixup(void *caller, ElfW(Dyn) *dynamic, ElfW(Addr) *global_offset_table) {
 	// it, then opening as many copies of that library as possible.
 	// TODO: We should be able to avoid many of these lookups by dlopen()'ing the library using
 	//       RTLD_NOW and RTLD_NOLOAD, then iterating over the GOT in parallel with relocations.
+	// FIXME: It turns out that dlopen() increments the dynamic loader's refcount even when
+	//        passed RTLD_NOLOAD, so that's a no-go!
 	// TODO: In practice, we could probably get away with just counting the relocation entries
 	//       that have distinct symbol table indices.  It looks like the symbol table's length
 	//       is only accessible from the ELF header, but we can probably find that at the base
 	//       address returned by the initial call to dladdr().
+	// FIXME: These relocations actually point into the GOT itself, not into the .text section.
+	//        They're not useful for determining the PLT's address, but we can tell how long the
+	//        GOT is simply by determining the number of such entries.
 	// TODO: We need to be able to locate the PLT, which we'll probably want to do by finding
 	//       two original GOT entries and taking first differences?  Of course, this will fail
 	//       if (almost) all of the library's symbols have already been resolved...
