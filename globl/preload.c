@@ -108,3 +108,15 @@ static void __attribute__((constructor)) ctor(void) {
 			segment->p_memsz + pgoffs, protect);
 	putchar('\n');
 }
+
+int sigaction(int num, const struct sigaction *new, struct sigaction *old) {
+	static int (*sigaction_location)(int, const struct sigaction *, struct sigaction *);
+	if(!sigaction_location)
+		sigaction_location = (int (*)(int, const struct sigaction *, struct sigaction *))
+			(uintptr_t) dlsym(RTLD_NEXT, "sigaction");
+	else if(num == SIGSEGV) {
+		handler = new->sa_sigaction;
+		new = NULL;
+	}
+	return sigaction_location(num, new, old);
+}

@@ -13,7 +13,7 @@ bench: libglobl.so
 bench: private RUSTFLAGS += -L. -Crpath
 libpreload.so: private LDLIBS += -ldl
 preload.o: private CFLAGS += -fpic
-preload.o: private CPPFLAGS += -D_DEFAULT_SOURCE
+preload.o: private CPPFLAGS += -D_GNU_SOURCE
 
 .PHONY: clean
 clean:
