@@ -35,6 +35,7 @@ static inline int prot(const ElfW(Phdr) *p) {
 }
 
 static void *objects[NOBJECTS];
+static void (*handler)(int, siginfo_t *, void *);
 
 static void segv(int no, siginfo_t *si, void *co) {
 	(void) no;
@@ -49,16 +50,22 @@ static void segv(int no, siginfo_t *si, void *co) {
 	ucontext_t *uc = co;
 	greg_t *reg, *regl;
 	for(reg = uc->uc_mcontext.gregs, regl = reg + NGREG - 1; *reg != (greg_t) magic; ++reg)
-		assert(reg != regl);
+		if(reg == regl) {
+			handler(no, si, co);
+			return;
+		}
+
 	*reg = (greg_t) objects[index];
 }
 
 static void __attribute__((constructor)) ctor(void) {
-	struct sigaction handler = {
+	struct sigaction old;
+	struct sigaction new = {
 		.sa_flags = SA_SIGINFO,
 		.sa_sigaction = segv,
 	};
-	sigaction(SIGSEGV, &handler, NULL);
+	sigaction(SIGSEGV, &new, &old);
+	handler = old.sa_sigaction;
 
 	const struct link_map *l = dlopen(NULL, RTLD_LAZY);
 	const ElfW(Rela) *rela = dyn(l, DT_RELA);
