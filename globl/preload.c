@@ -40,8 +40,6 @@ static void (*handler)(int, siginfo_t *, void *);
 static void segv(int no, siginfo_t *si, void *co) {
 	(void) no;
 
-	putchar_unlocked('.');
-
 	uintptr_t magic = (uintptr_t) si->si_addr;
 	assert(si->si_code == SEGV_MAPERR);
 	assert((magic & MASK) == MASK);
