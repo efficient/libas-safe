@@ -1,6 +1,11 @@
 #include <sys/time.h>
+#include <assert.h>
+#ifdef _GNU_SOURCE
+#      include <dlfcn.h>
+#endif
 #include <errno.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 
 static void handler(int ign) {
@@ -43,6 +48,10 @@ int main(void) {
 	};
 	setitimer(ITIMER_REAL, &it, NULL);
 
+#ifdef _GNU_SOURCE
+	void *l = dlmopen(LM_ID_NEWLM, "libc.so.6", RTLD_LAZY);
+	void (*fflush)(FILE *) = (void (*)(FILE *)) (uintptr_t) dlsym(l, "fflush");
+#endif
 	for(;;)
 		fflush(stdout);
 
