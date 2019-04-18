@@ -63,13 +63,19 @@ static const ElfW(Sym) *sym(const char *name, const ElfW(Sym) *symtab, const cha
 	return NULL;
 }
 
-static inline void rela(const ElfW(Rela) *r, uintptr_t addr, const ElfW(Sym) *st, const char *s) {
+static inline void rela(const ElfW(Rela) *r, uintptr_t addr, const ElfW(Sym) *st, const char *s,
+	void *(*dlsym)(void *, const char *)) {
 	st += ELF64_R_SYM(r->r_info);
 	if(st->st_shndx != SHN_UNDEF && ELF64_ST_TYPE(r->r_info) != STT_OBJECT) {
 		const void *imp = dlsym(RTLD_NEXT, s += st->st_name);
 		if(imp)
 			*(const void **) (addr + r->r_offset) = imp;
 	}
+}
+
+static void *dlsymb(void *handle, const char *symbol) {
+	void *_dl_sym(void *, const char *, void *(*)(void *, const char *));
+	return _dl_sym(handle, symbol, dlsymb);
 }
 
 static void __attribute__((constructor)) ctor(void) {
@@ -81,6 +87,7 @@ static void __attribute__((constructor)) ctor(void) {
 	const char *strtab = dyn(DT_STRTAB);
 
 	uintptr_t addr;
+	void *(*dls)(void *, const char *) = sym("dlsym", symtab, strtab) ? dlsymb : dlsym;
 	const ElfW(Sym) *dlo = sym("dlopen", symtab, strtab);
 	if(dlo)
 		addr = (uintptr_t) dlopen - dlo->st_value;
@@ -103,11 +110,11 @@ static void __attribute__((constructor)) ctor(void) {
 	prot_segment(addr, relseg, PROT_WRITE);
 	for(const ElfW(Rela) *r = rel; r != rele; ++r)
 		if(ELF64_R_TYPE(r->r_info) == R_X86_64_GLOB_DAT)
-			rela(r, addr, symtab, strtab);
+			rela(r, addr, symtab, strtab, dls);
 	prot_segment(addr, relseg, 0);
 
 	prot_segment(addr, jmprelseg, PROT_WRITE);
 	for(const ElfW(Rela) *r = jmprel; r != jmprele; ++r)
-		rela(r, addr, symtab, strtab);
+		rela(r, addr, symtab, strtab, dls);
 	prot_segment(addr, jmprelseg, 0);
 }
