@@ -2,7 +2,6 @@
 #include <link.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <unistd.h>
 
 #define mprotect cmprotect
@@ -10,6 +9,15 @@
 
 static int (*cmprotect)(void *, size_t, int);
 static long (*csysconf)(int);
+
+static inline int strcmp(const char *s1, const char *s2) {
+	while(*s1 && *s2 && *s1++ == *s2++);
+
+	if(!*s1 != !*s2)
+		return *s2 - *s1;
+	else
+		return s2[-1] - s1[-1];
+}
 
 static size_t pagesz(void) {
 	static size_t pagesz;
