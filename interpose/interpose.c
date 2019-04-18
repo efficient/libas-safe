@@ -5,6 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 
+#define mprotect cmprotect
+#define sysconf csysconf
+
+static int (*cmprotect)(void *, size_t, int);
+static long (*csysconf)(int);
+
 static size_t pagesz(void) {
 	static size_t pagesz;
 	if(!pagesz)
@@ -96,6 +102,11 @@ static void __attribute__((constructor)) ctor(void) {
 		for(l = dlopen(NULL, RTLD_LAZY); l && l->l_ld != _DYNAMIC; l = l->l_next);
 		addr = l->l_addr;
 	}
+
+#define WRAP(ret, csym, ...) csym = (ret (*)(__VA_ARGS__)) (uintptr_t) \
+	dls(sym(#csym, symtab, strtab) ? RTLD_NEXT : NULL, #csym)
+	WRAP(int, mprotect, void *, size_t, int);
+	WRAP(long, sysconf, int);
 
 	const ElfW(Ehdr) *e = (ElfW(Ehdr) *) addr;
 	const ElfW(Phdr) *p = (ElfW(Phdr) *) (addr + e->e_phoff);
