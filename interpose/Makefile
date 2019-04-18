@@ -10,6 +10,7 @@ libtime.so: private LDLIBS += -ldl
 libtime.so: interpose.o
 
 interpose.o: private CPPFLAGS += -D_GNU_SOURCE
+time.o: private CFLAGS += -fno-optimize-sibling-calls
 
 .PHONY: clean
 clean:
