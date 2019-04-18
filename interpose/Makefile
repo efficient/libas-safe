@@ -6,6 +6,11 @@ override LDLIBS   := $(LDLIBS)
 .PHONY: all
 all: date libtime.so
 
+libtime.so: private LDLIBS += -ldl
+libtime.so: interpose.o
+
+interpose.o: private CPPFLAGS += -D_GNU_SOURCE
+
 .PHONY: clean
 clean:
 	git clean -fX
