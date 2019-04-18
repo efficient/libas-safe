@@ -1,7 +1,59 @@
+#include <sys/mman.h>
 #include <link.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
+
+static size_t pagesz(void) {
+	static size_t pagesz;
+	if(!pagesz)
+		pagesz = sysconf(_SC_PAGESIZE);
+	return pagesz;
+}
+
+static inline const ElfW(Phdr) *segment(uintptr_t offset,
+	const ElfW(Phdr) *phdr, const ElfW(Phdr) *phdr_end) {
+
+	if(phdr == phdr_end)
+		return NULL;
+
+	const ElfW(Phdr) *p;
+	for(p = phdr; offset < p->p_vaddr || p->p_vaddr + p->p_memsz <= offset; ++p)
+		if(p + 1 == phdr_end)
+			return NULL;
+	return p;
+}
+
+static inline const ElfW(Phdr) *segment_unwritable(uintptr_t offset,
+	const ElfW(Phdr) *phdr, const ElfW(Phdr) *phdr_end) {
+	const ElfW(Phdr) *p;
+	for(p = segment(offset, phdr, phdr_end); p && p->p_flags & PF_W;
+		p = segment(offset, p + 1, phdr_end));
+	return p;
+}
+
+static inline int prot(const ElfW(Phdr) *p) {
+	uint32_t pf = p->p_flags;
+	return ((pf & PF_R) ? PROT_READ : 0) | ((pf & PF_W) ? PROT_WRITE : 0) |
+		((pf & PF_X) ? PROT_EXEC : 0);
+}
+
+static inline int prot_segment(uintptr_t base, const ElfW(Phdr) *p, int grants) {
+	if(!p)
+		return 0;
+
+	uintptr_t addr = base + p->p_vaddr;
+	size_t offset = addr & (pagesz() - 1);
+	return mprotect((void *) (addr - offset), p->p_memsz + offset, prot(p) | grants);
+}
+
+static inline const void *dyn(unsigned tag) {
+	for(const ElfW(Dyn) *d = _DYNAMIC; d->d_tag != DT_NULL; ++d)
+		if(d->d_tag == tag)
+			return (void *) d->d_un.d_ptr;
+	return NULL;
+}
 
 static inline void rela(const ElfW(Rela) *r, uintptr_t addr, const ElfW(Sym) *st, const char *s) {
 	st += ELF64_R_SYM(r->r_info);
@@ -10,13 +62,6 @@ static inline void rela(const ElfW(Rela) *r, uintptr_t addr, const ElfW(Sym) *st
 		if(imp)
 			*(const void **) (addr + r->r_offset) = imp;
 	}
-}
-
-static inline const void *dyn(unsigned tag) {
-	for(const ElfW(Dyn) *d = _DYNAMIC; d->d_tag != DT_NULL; ++d)
-		if(d->d_tag == tag)
-			return (void *) d->d_un.d_ptr;
-	return NULL;
 }
 
 static void __attribute__((constructor)) ctor(void) {
@@ -31,9 +76,24 @@ static void __attribute__((constructor)) ctor(void) {
 	const ElfW(Sym) *symtab = dyn(DT_SYMTAB);
 	const char *strtab = dyn(DT_STRTAB);
 
+	const ElfW(Ehdr) *e = (ElfW(Ehdr) *) addr;
+	const ElfW(Phdr) *p = (ElfW(Phdr) *) (addr + e->e_phoff);
+	const ElfW(Phdr) *pe = p + e->e_phnum;
+	const ElfW(Phdr) *relseg = NULL;
+	const ElfW(Phdr) *jmprelseg = NULL;
+	if(rel != rele)
+		relseg = segment_unwritable(rel->r_offset, p, pe);
+	if(jmprel != jmprele)
+		jmprelseg = segment_unwritable(jmprel->r_offset, p, pe);
+
+	prot_segment(addr, relseg, PROT_WRITE);
 	for(const ElfW(Rela) *r = rel; r != rele; ++r)
 		if(ELF64_R_TYPE(r->r_info) == R_X86_64_GLOB_DAT)
 			rela(r, addr, symtab, strtab);
+	prot_segment(addr, relseg, 0);
+
+	prot_segment(addr, jmprelseg, PROT_WRITE);
 	for(const ElfW(Rela) *r = jmprel; r != jmprele; ++r)
 		rela(r, addr, symtab, strtab);
+	prot_segment(addr, jmprelseg, 0);
 }
