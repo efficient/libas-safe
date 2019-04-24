@@ -30,11 +30,6 @@ static int deref(char *reg, size_t len, void *out) {
 	(void) out;
 
 	struct insertion *insert = out;
-	if((reg = strchr(reg, '('))) {
-		++reg;
-		*strchr(reg, ')') = '\0';
-	}
-
 	const uint8_t **mov = r(reg);
 	insert->inst = *mov;
 	insert->size = mov[1] - mov[0];
@@ -99,9 +94,9 @@ int main(int argc, char **argv) {
 								sym + ELF64_R_SYM(r->r_info);
 							if(st->st_shndx == SHN_UNDEF) {
 								size_t offset = load->sh_offset +
-									r->r_offset - r->r_addend;
+									r->r_offset;
 								const uint8_t *inst =
-									(uint8_t *) e + offset;
+									(uint8_t *) e + offset - 3;
 								r->r_info =
 									ELF64_R_INFO(ELF64_R_SYM(
 									r->r_info), nonextended ?
@@ -111,10 +106,10 @@ int main(int argc, char **argv) {
 									++ninsertions *
 									sizeof *insertions);
 								insertions[ninsertions - 1].offset =
-									offset;
+									offset - r->r_addend;
 								disasm_cb(ctx, &inst,
 									inst + X86_64_MAX_INSTR_LEN,
-									0, "%.1o", deref,
+									0, "%.2o", deref,
 									insertions + ninsertions - 1,
 									NULL);
 								growth += insertions[ninsertions - 1].size;
