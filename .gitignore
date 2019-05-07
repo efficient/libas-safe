@@ -1,0 +1,7 @@
+/libgotcha.h
+/libgotcha.mk
+/libgotcha_repl.h
+
+*.a
+*.o
+*.so
