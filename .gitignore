@@ -1,6 +1,4 @@
-/libgotcha.h
-/libgotcha.mk
-/libgotcha_repl.h
+/libgotcha
 
 *.a
 *.o

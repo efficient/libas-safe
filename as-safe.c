@@ -1,4 +1,4 @@
-#include "libgotcha.h"
+#include "libgotcha_api.h"
 #include "libgotcha_repl.h"
 
 #include <assert.h>
