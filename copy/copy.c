@@ -3,11 +3,22 @@
 #include "libgotcha/libgotcha_api.h"
 
 #include <assert.h>
+#include <threads.h>
+
+static thread_local bool teardown;
+
+static void callback(void) {
+	if(teardown) {
+		libgotcha_group_thread_set(LIBGOTCHA_GROUP_SHARED);
+		assert(libgotcha_group_thread_get() == LIBGOTCHA_GROUP_SHARED);
+	}
+}
 
 void init(void) {
 	static libgotcha_group_t group = LIBGOTCHA_GROUP_SHARED;
 	if(group == LIBGOTCHA_GROUP_SHARED)
 		group = libgotcha_group_new();
+	libgotcha_shared_hook(callback);
 
 	assert(libgotcha_group_thread_get() == LIBGOTCHA_GROUP_SHARED);
 	libgotcha_group_thread_set(group);
@@ -23,6 +34,5 @@ bool (*checker(void))(void) {
 }
 
 void cleanup(void) {
-	libgotcha_group_thread_set(LIBGOTCHA_GROUP_SHARED);
-	assert(libgotcha_group_thread_get() == LIBGOTCHA_GROUP_SHARED);
+	teardown = true;
 }
