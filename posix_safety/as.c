@@ -10,6 +10,7 @@ static void handler(int ign) {
 
 	static char acter = '|';
 	printf("%c\b", acter);
+	fflush(stdout);
 	switch(acter) {
 	case '|':
 		acter = '/';
