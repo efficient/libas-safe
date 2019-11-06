@@ -1,3 +1,11 @@
 #!/bin/sh
 
-c99 -shared -zdefs -D_GNU_SOURCE -o liblib.so lib.c -ldl && c99 -Wl,-R\$ORIGIN -O2 -o true true.c -Wl,--no-as-needed liblib.so -Wl,--as-needed && ./true
+set -e
+c99 -shared -zdefs -D_GNU_SOURCE -o liblib.so lib.c -ldl && c99 -Wl,-R\$ORIGIN -O2 -o true true.c -Wl,--no-as-needed liblib.so -Wl,--as-needed
+
+true="`which true`"
+set -x
+./true
+LD_PRELOAD="./liblib.so" "$true"
+LD_PRELOAD="$PWD/liblib.so" "$true"
+LD_PRELOAD="liblib.so" LD_LIBRARY_PATH="." "$true"
