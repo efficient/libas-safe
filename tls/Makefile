@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs tcb
+BINS := tls tlrs selfref tcb
 
 .PHONY: all
 all: $(BINS)
