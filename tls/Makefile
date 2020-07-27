@@ -10,7 +10,7 @@ BINS := tls
 all: $(BINS)
 
 tls: private LDFLAGS += -L. -Wl,-R\$$ORIGIN
-tls: private LDLIBS += -linger
+tls: private LDLIBS := -linger $(LDLIBS)
 
 .PHONY: clean
 clean:
