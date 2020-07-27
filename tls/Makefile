@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs selfref tcb
+BINS := tls tlrs selfref tcb tcbpic
 
 .PHONY: all
 all: $(BINS)
@@ -19,6 +19,8 @@ tls: private LDLIBS := -linger $(LDLIBS)
 
 tlrs: private LDFLAGS += -Wl,-R\$$ORIGIN/$(wildcard libinger/target/*) -Wl,-Ilibinger/ld.so
 tlrs: private RUSTFLAGS += -L$(wildcard libinger/target/*/deps)
+
+tcbpic: private CFLAGS += -fpic
 
 .PHONY: clean
 clean:
