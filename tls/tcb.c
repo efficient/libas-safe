@@ -11,6 +11,11 @@ int arch_prctl(int, const void ***);
 void **_dl_allocate_tls(void **);
 void _dl_deallocate_tls(void **, bool);
 
+#pragma weak timed_plugin
+void timed_plugin(void);
+#pragma weak threaded_plugin
+void threaded_plugin(void);
+
 static void *timed(void) {
 	void **lpfcb;
 	const void **tcb;
@@ -22,6 +27,8 @@ static void *timed(void) {
 	assert(!ean);
 	ean = true;
 	assert(ean);
+	if(timed_plugin)
+		timed_plugin();
 
 	arch_prctl(ARCH_SET_FS, (const void ***) tcb);
 	return lpfcb;
@@ -35,6 +42,8 @@ static void *threaded(void *lpfcb) {
 	arch_prctl(ARCH_SET_FS, (const void ***) lpfcb);
 
 	assert(ean);
+	if(threaded_plugin)
+		threaded_plugin();
 
 	arch_prctl(ARCH_SET_FS, (const void ***) tcb);
 	_dl_deallocate_tls(lpfcb, true);

@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs selfref selfthd tcb tcbpic
+BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so
 
 .PHONY: all
 all: $(BINS)
@@ -28,3 +28,6 @@ clean:
 
 %: %.rs
 	$(RUSTC) $(RUSTFLAGS) $(LDFLAGS:%=-Clink-arg=%) $< $(RUSTLIBS)
+
+lib%.so: %.rs
+	$(RUSTC) $(RUSTFLAGS) --crate-type dylib $(LDFLAGS:%=-Clink-arg=%) $< $(RUSTLIBS)
