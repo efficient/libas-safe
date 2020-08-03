@@ -20,6 +20,8 @@ tls: private LDLIBS := -linger $(LDLIBS)
 tlrs: private LDFLAGS += -Wl,-R\$$ORIGIN/$(wildcard libinger/target/*) -Wl,-Ilibinger/ld.so
 tlrs: private RUSTFLAGS += -L$(wildcard libinger/target/*/deps)
 
+selfthd: private CPPFLAGS += -D_DEFAULT_SOURCE
+
 tcbpic: private CFLAGS += -fpic
 
 .PHONY: clean
