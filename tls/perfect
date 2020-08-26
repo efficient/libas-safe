@@ -1,9 +1,17 @@
 #!/bin/sh
 
-if [ "$#" -ne "1" ]
+if [ "$#" -eq "0" ]
 then
-	echo "USAGE: $0 <libsets>"
+	echo "USAGE: $0 <libsets> [cmdline]..."
 	exit 1
 fi
 
-LD_PRELOAD=libinger/target/release/libinger.so LIBGOTCHA_NUMGROUPS="$1" LIBGOTCHA_NOGLOBALS= exec ./perf
+groups="$1"
+shift 1
+script="perf"
+if [ "$#" -ne "0" ]
+then
+	script="$*"
+fi
+
+LD_PRELOAD=libinger/target/release/libinger.so LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
