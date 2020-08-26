@@ -1,9 +1,11 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 
-#define ITERS 10000000
+#define ITERS 1000000
 
 void *_dl_allocate_tls(void *);
+void _dl_deallocate_tls(void *, bool);
 
 static unsigned long nsnow(void) {
 	struct timespec tv;
@@ -14,7 +16,7 @@ static unsigned long nsnow(void) {
 int main(void) {
 	unsigned long nsthen = nsnow();
 	for(int iter = 0; iter < ITERS; ++iter)
-		_dl_allocate_tls(NULL);
+		_dl_deallocate_tls(_dl_allocate_tls(NULL), true);
 
 	unsigned long nswhen = (nsnow() - nsthen) / ITERS;
 	printf("%ld.%03ld μs\n", nswhen / 1000, nswhen % 1000);
