@@ -8,7 +8,7 @@ use test::Bencher;
 fn spawn(lo: &mut Bencher) {
 	use std::thread::spawn;
 
-	lo.iter(|| spawn(|| ()));
+	lo.iter(|| spawn(|| ()).join());
 }
 
 #[bench]
