@@ -14,4 +14,4 @@ then
 	script="$*"
 fi
 
-LD_PRELOAD=libinger/target/release/libinger.so LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
+LD_PRELOAD="`echo libinger/target/*/libinger.so`" LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
