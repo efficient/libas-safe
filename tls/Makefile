@@ -20,9 +20,14 @@ tls: private LDLIBS := -linger $(LDLIBS)
 tlrs: private LDFLAGS += -Wl,-R\$$ORIGIN/$(wildcard libinger/target/*) -Wl,-Ilibinger/ld.so
 tlrs: private RUSTFLAGS += -L$(wildcard libinger/target/*/deps)
 
-perf perflazy: private CFLAGS += -O2
-perf perflazy: private CPPFLAGS += -D_DEFAULT_SOURCE
-perf perflazy: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+perf: private CFLAGS += -O2
+perf: private CPPFLAGS += -D_DEFAULT_SOURCE
+perf: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+
+perflazy: private CFLAGS += -fpic -O2
+perflazy: private CPPFLAGS += -D_GNU_SOURCE
+perflazy: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+perflazy: private LDLIBS += -ldl
 
 mem: private CFLAGS += -O2
 mem: private CPPFLAGS += -D_GNU_SOURCE
