@@ -28,6 +28,8 @@ int main(int argc, char **argv) {
 		size_t *tls_max_dtv_idx = dtv_max_idx();
 		size_t snapshot = *tls_max_dtv_idx;
 		printf("snap: %lu\n", snapshot);
+		// TODO: Note that zygote processes are not an acceptable workaround for this
+		//       slowdown, as it afflicts the creation of each thread!
 		for(int i = 0; i < 511; ++i)
 			if(!dlmopen(LM_ID_NEWLM, argv[1], RTLD_NOW)) {
 				fprintf(stderr, "%s\n", dlerror());
@@ -43,6 +45,13 @@ int main(int argc, char **argv) {
 
 	unsigned long nsthen = nsnow();
 	for(int iter = 0; iter < ITERS; ++iter)
+		// TODO: Benchmark with a _dl_update_slotinfo() (or a __tls_get_addr() w/
+		//       forged generation count) here.
+		//       This should reveal that although we have mitigated the performance hit of
+		//       thread creation, we only defer said work until the first use of a
+		//       preemptible function and therefore don't fix our own performance.
+		//       Another option is to copy the whole initialization image as one block.
+		//       Maybe we can even accomplish the above using CoW?
 		_dl_deallocate_tls(_dl_allocate_tls(NULL), true);
 
 	unsigned long nswhen = (nsnow() - nsthen) / ITERS;
