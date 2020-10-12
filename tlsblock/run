@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if [ "$#" -lt "2" ]
+then
+	echo "USAGE: $0 <program> <outfile> [dbarg]..."
+	exit 1
+fi
+
+prog="$1"
+if [ ! \( -e "$prog" -a -e "$prog.gdb" \) ]
+then
+	echo "Missing file(s): $prog and/or $prog.gdb"
+	exit 2
+fi
+
+out="$2"
+shift 2
+echo | gdb -q "$@" -x "$prog.gdb" -ex r\ \>"$out" "$prog"
