@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$#" -ge "2" ]
+then
+	set -- "$@" -ex set\ env\ LD_PRELOAD=libinger/target/release/libinger.so
+fi
+
+LIBGOTCHA_NUMGROUPS=1 LIBGOTCHA_NOGLOBALS= exec ./run "$@"
