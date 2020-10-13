@@ -21,13 +21,13 @@ b malloc
 dis $bpnum
 b memmove-vec-unaligned-erms.S:mempcpy
   comm
-    p printf(".tdata %#x-%#x\n", $rdi, $rdi + $rdx)
+    p printf("%s %#x-%#x\n", $rdx ? ".tdata" : "(data)", $rdi, $rdi + $rdx)
     c
   end
 dis $bpnum
 b memset-vec-unaligned-erms.S:memset
   comm
-    p printf(".tbss  %#x-%#x\n", $rdi, $rdi + $rdx)
+    p printf("%s  %#x-%#x\n", $rdx ? ".tbss" : "(bss)", $rdi, $rdi + $rdx)
     c
   end
 dis $bpnum
