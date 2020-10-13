@@ -3,8 +3,9 @@
 
 #define SIZE 100 MiB
 
-//#define SECTION DATA
-#define SECTION BSS
+#ifndef SECTION
+# error no SECTION defined
+#endif
 
 #define BSS
 #define DATA = {1}

@@ -5,10 +5,13 @@ override LDLIBS := -lpthread $(LDLIBS)
 
 CC := c99
 
-BINS := layout libsotls.so
+BINS := layout libsobss.so libsodata.so
 
 .PHONY: all
 all: $(BINS)
+
+libsobss.so: sotls.c
+libsodata.so: sotls.c
 
 .PHONY: clean
 clean:
