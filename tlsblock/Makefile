@@ -5,7 +5,7 @@ override LDLIBS := -lpthread $(LDLIBS)
 
 CC := c99
 
-BINS := layout
+BINS := layout libsotls.so
 
 .PHONY: all
 all: $(BINS)
@@ -13,3 +13,6 @@ all: $(BINS)
 .PHONY: clean
 clean:
 	$(RM) $(BINS)
+
+lib%.so: %.c
+	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -shared -zdefs -ztext $< -o $@ $(LDLIBS)
