@@ -88,3 +88,12 @@ void tlsblock_cleanup(void) {
 		unlink(template_filename);
 	}
 }
+
+static void __attribute__((constructor)) ctor(void) {
+	bool ean = tlsblock_init();
+	assert(ean);
+}
+
+static void __attribute__((destructor)) dtor(void) {
+	tlsblock_cleanup();
+}
