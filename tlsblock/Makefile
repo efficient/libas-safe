@@ -5,13 +5,18 @@ override LDLIBS := -lpthread $(LDLIBS)
 
 CC := c99
 
-BINS := layout libsobss.so libsodata.so
+BINS := libtlsblock.so layout libsobss.so libsodata.so
 
 .PHONY: all
 all: $(BINS)
 
 libsobss.so: sotls.c
 libsodata.so: sotls.c
+
+libtlsblock.so: tlsblock.h
+libtlsblock.so: private CFLAGS += -fpic
+libtlsblock.so: private CPPFLAGS += -D_GNU_SOURCE
+libtlsblock.so: private LDLIBS += -ldl
 
 .PHONY: clean
 clean:
