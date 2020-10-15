@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define ITERS 1000000
+#define ITERS 2500000
 
 void *_dl_allocate_tls(void *);
 void _dl_deallocate_tls(void *, bool);
