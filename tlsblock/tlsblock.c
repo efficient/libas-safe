@@ -17,7 +17,8 @@
 		if(!fun) \
 			*(void **) &fun = dlsym(RTLD_NEXT, #fun); \
 
-static int template;
+static bool template;
+static int template_fd;
 static size_t template_size;
 static char template_filename[] = BACKING_FILENAME;
 
@@ -29,7 +30,7 @@ void _dl_deallocate_tls(void *, bool);
 
 INTERPOSE(void *, _dl_allocate_tls, void *existing) //{
 	if(template)
-		return mmap(NULL, template_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, template, 0);
+		return mmap(NULL, template_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, 0);
 
 	if(!existing)
 		recording = true;
@@ -59,7 +60,7 @@ bool tlsblock_init(void) {
 		return true;
 
 	int fd = mkstemp(template_filename);
-	if(fd <= 0)
+	if(fd < 0)
 		return false;
 
 	void *handle = _dl_allocate_tls(NULL);
@@ -74,17 +75,18 @@ bool tlsblock_init(void) {
 	_dl_deallocate_tls(handle, true);
 	handle = NULL;
 
+	template_fd = fd;
 	template_size = recording_size;
 	__asm__("" ::: "memory");
-	template = fd;
+	template = true;
 
 	return true;
 }
 
 void tlsblock_cleanup(void) {
-	int fd = atomic_exchange(&template, 0);
-	if(fd) {
-		close(fd);
+	if(atomic_exchange(&template, false)) {
+		close(template_fd);
+		template_fd = 0;
 		unlink(template_filename);
 	}
 }
