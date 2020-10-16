@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf perflazy mem spawn
+BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf perflazy perfmcp mem spawn
 
 .PHONY: all
 all: $(BINS)
@@ -28,6 +28,9 @@ perflazy: private CFLAGS += -fpic -O2
 perflazy: private CPPFLAGS += -D_GNU_SOURCE
 perflazy: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
 perflazy: private LDLIBS += -ldl
+
+perfmcp: private CFLAGS += -O2
+perfmcp: private CPPFLAGS += -D_DEFAULT_SOURCE
 
 mem: private CFLAGS += -O2
 mem: private CPPFLAGS += -D_GNU_SOURCE
