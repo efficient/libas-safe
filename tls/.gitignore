@@ -3,4 +3,5 @@
 
 /*.so
 !/Makefile
+!/perfblock
 !/perfect
