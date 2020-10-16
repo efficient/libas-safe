@@ -94,10 +94,10 @@ bool tlsblock_init(void) {
 		template_addr = addr;
 	}
 	template_size = recording_size;
-	__asm__("" ::: "memory");
-	template = true;
 
 	_dl_deallocate_tls(handle, true);
+	template = true;
+
 	return true;
 }
 
