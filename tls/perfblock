@@ -16,7 +16,7 @@ max="$4"
 for libsets in `seq "$min" "$step" "$max"`
 do
 	printf "%s" "$libsets" | tee -a "$outfile"
-	for command in "./perfect" "LD_PRELOAD=../tlsblock/libtlsblock.so LIBTLSB_COW= ./perfect"
+	for command in "./perfect" "LD_PRELOAD=../tlsblock/libtlsblock.so ./perfect" "LD_PRELOAD=../tlsblock/libtlsblock.so LIBTLSB_COW= ./perfect"
 	do
 		printf ",%s" "`eval $command "$libsets" | cut -d" " -f1`" | tee -a "$outfile"
 	done
