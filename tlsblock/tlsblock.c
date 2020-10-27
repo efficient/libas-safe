@@ -16,8 +16,12 @@
 #define INTERPOSE(ret, fun, ...) \
 	ret fun(__VA_ARGS__) { \
 		static ret (*fun)(__VA_ARGS__) = NULL; \
-		if(!fun) \
+		static thread_local bool bootstrapping = false; \
+		if(!fun && !bootstrapping) { \
+			bootstrapping = true; \
 			*(void **) &fun = dlsym(RTLD_NEXT, #fun); \
+			bootstrapping = false; \
+		} \
 
 static bool template;
 static void *template_addr;
