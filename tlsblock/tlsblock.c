@@ -13,6 +13,8 @@
 #define COW_CONFIG "LIBTLSB_COW"
 #define COW_FILENAME "/tmp/libtlsblock-XXXXXX"
 
+#define BOOTSTRAP_BYTES 32
+
 #define INTERPOSE(ret, fun, ...) \
 	ret fun(__VA_ARGS__) { \
 		static ret (*fun)(__VA_ARGS__) = NULL; \
@@ -34,6 +36,8 @@ static thread_local const uint8_t *recording_addr;
 static thread_local size_t recording_size;
 
 void _dl_deallocate_tls(void *, bool);
+
+#define fdputs(s, fd) write(fd, s, sizeof s)
 
 INTERPOSE(void *, _dl_allocate_tls, void *existing) //{
 	if(template) {
@@ -68,6 +72,19 @@ INTERPOSE(void *, malloc, size_t arg) //{
 		recording = false;
 	}
 	return res;
+}
+
+INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
+	if(bootstrapping) {
+		static thread_local uint8_t buf[BOOTSTRAP_BYTES] = {0};
+		if(nmemb * size != sizeof buf) {
+			fdputs("calloc() bootstrap size mismatch\n", STDOUT_FILENO);
+			abort();
+		}
+		return buf;
+	}
+
+	return calloc(nmemb, size);
 }
 
 bool tlsblock_init(void) {
