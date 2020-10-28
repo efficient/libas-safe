@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf perflazy perfmcp mem spawn
+BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf rperf rperfb spawn perflazy perfmcp mem
 
 .PHONY: all
 all: $(BINS)
@@ -24,6 +24,14 @@ perf: private CFLAGS += -O2
 perf: private CPPFLAGS += -D_DEFAULT_SOURCE
 perf: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
 
+rperf: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+rperf: private RUSTC := rustdev rustc
+rperf: private RUSTFLAGS += -O
+
+rperfb spawn: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+rperfb spawn: private RUSTC := rustdev rustc
+rperfb spawn: private RUSTFLAGS += --test -O
+
 perflazy: private CFLAGS += -fpic -O2
 perflazy: private CPPFLAGS += -D_GNU_SOURCE
 perflazy: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
@@ -35,10 +43,6 @@ perfmcp: private CPPFLAGS += -D_DEFAULT_SOURCE
 mem: private CFLAGS += -O2
 mem: private CPPFLAGS += -D_GNU_SOURCE
 mem: private LDLIBS += -ldl
-
-spawn: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
-spawn: private RUSTC := rustdev rustc
-spawn: private RUSTFLAGS += --test -O
 
 selfthd: private CPPFLAGS += -D_DEFAULT_SOURCE
 
