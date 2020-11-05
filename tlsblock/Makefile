@@ -13,7 +13,7 @@ all: $(BINS)
 libsobss.so: sotls.c
 libsodata.so: sotls.c
 
-libtlsblock.so: tlsblock.h
+libtlsblock.so: interpose.h
 libtlsblock.so: private CFLAGS += -fpic
 libtlsblock.so: private CPPFLAGS += -D_GNU_SOURCE
 libtlsblock.so: private LDLIBS += -ldl

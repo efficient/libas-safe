@@ -1,29 +1,17 @@
-#include "tlsblock.h"
+#include "interpose.h"
 
 #include <sys/mman.h>
 #include <assert.h>
-#include <dlfcn.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <threads.h>
 #include <unistd.h>
 
 #define COW_CONFIG "LIBTLSB_COW"
 #define COW_FILENAME "/tmp/libtlsblock-XXXXXX"
 
 #define BOOTSTRAP_BYTES 32
-
-#define INTERPOSE(ret, fun, ...) \
-	ret fun(__VA_ARGS__) { \
-		static ret (*fun)(__VA_ARGS__) = NULL; \
-		static thread_local bool bootstrapping = false; \
-		if(!fun && !bootstrapping) { \
-			bootstrapping = true; \
-			*(void **) &fun = dlsym(RTLD_NEXT, #fun); \
-			bootstrapping = false; \
-		} \
 
 static bool template;
 static void *template_addr;
@@ -87,7 +75,7 @@ INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
 	return calloc(nmemb, size);
 }
 
-bool tlsblock_init(void) {
+static bool tlsblock_init(void) {
 	static bool idempotent;
 	if(atomic_exchange(&idempotent, true))
 		return true;
@@ -122,7 +110,7 @@ bool tlsblock_init(void) {
 	return true;
 }
 
-void tlsblock_cleanup(void) {
+static void tlsblock_cleanup(void) {
 	if(!atomic_exchange(&template, false))
 		return;
 
