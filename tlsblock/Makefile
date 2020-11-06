@@ -5,7 +5,7 @@ override LDLIBS := -lpthread $(LDLIBS)
 
 CC := c99
 
-BINS := libtlsblock.so libltrace.so layout libsobss.so libsodata.so
+BINS := libtlsblock.so libltrace.so layout thread libsobss.so libsodata.so
 
 .PHONY: all
 all: $(BINS)
