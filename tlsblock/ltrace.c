@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#define BOOTSTRAP_BYTES 32
 
 static thread_local unsigned nesting;
 
@@ -37,6 +40,28 @@ INTERPOSE(void *, malloc, size_t arg) //{
 	++nesting;
 
 	void *res = malloc(arg);
+
+	--nesting;
+	indent();
+	fprintf(stderr, "->%#lx\n", (uintptr_t) res);
+	return res;
+}
+
+INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
+	if(bootstrapping) {
+		static thread_local uint8_t buf[BOOTSTRAP_BYTES] = {0};
+		if(nmemb * size != sizeof buf) {
+			fputs("calloc() bootstrap size mismatch\n", stderr);
+			abort();
+		}
+		return buf;
+	}
+
+	indent();
+	fprintf(stderr, "calloc(%lu, %lu)\n", nmemb, size);
+	++nesting;
+
+	void *res = calloc(nmemb, size);
 
 	--nesting;
 	indent();
