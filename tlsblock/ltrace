@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$#" -eq "0" ]
+then
+	echo "USAGE: $0 <cmdline>..."
+	exit 1
+fi
+
+LD_PRELOAD="`dirname "$0"`/libltrace.so" exec "$@"

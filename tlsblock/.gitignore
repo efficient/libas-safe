@@ -4,5 +4,6 @@
 *.so
 
 !/Makefile
+!/ltrace
 !/run
 !/runinger

@@ -5,7 +5,7 @@ override LDLIBS := -lpthread $(LDLIBS)
 
 CC := c99
 
-BINS := libtlsblock.so layout libsobss.so libsodata.so
+BINS := libtlsblock.so libltrace.so layout libsobss.so libsodata.so
 
 .PHONY: all
 all: $(BINS)
@@ -13,10 +13,10 @@ all: $(BINS)
 libsobss.so: sotls.c
 libsodata.so: sotls.c
 
-libtlsblock.so: interpose.h
-libtlsblock.so: private CFLAGS += -fpic
-libtlsblock.so: private CPPFLAGS += -D_GNU_SOURCE
-libtlsblock.so: private LDLIBS += -ldl
+libtlsblock.so libltrace.so: interpose.h
+libtlsblock.so libltrace.so: private CFLAGS += -fpic
+libtlsblock.so libltrace.so: private CPPFLAGS += -D_GNU_SOURCE
+libtlsblock.so libltrace.so: private LDLIBS += -ldl
 
 .PHONY: clean
 clean:
