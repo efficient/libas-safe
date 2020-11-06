@@ -4,10 +4,15 @@
 #include <pthread.h>
 #include <stdio.h>
 
+void *ltrace_dl_allocate_tls_ret;
+
 static void *thread(void *set) {
 	uintptr_t off = (uintptr_t) set;
-	unsigned *ptr = (unsigned *) (addressof_tcb() - off);
-	assert(*ptr == 0xdeadbeef);
+	uintptr_t tcb = addressof_tcb();
+	unsigned *tls = (unsigned *) (tcb - off);
+	if(ltrace_dl_allocate_tls_ret)
+		assert((uintptr_t) ltrace_dl_allocate_tls_ret == tcb);
+	assert(*tls == 0xdeadbeef);
 	return NULL;
 }
 

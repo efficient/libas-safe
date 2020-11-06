@@ -17,6 +17,7 @@ layout: offset.h
 layout: private LDLIBS += -Wl,--no-as-needed -lpthread -Wl,--as-needed
 
 thread: offset.h
+thread: private CFLAGS += -rdynamic
 thread: private LDLIBS += -lpthread
 
 libtlsblock.so libltrace.so: interpose.h
