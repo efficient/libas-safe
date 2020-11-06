@@ -13,6 +13,19 @@ static inline void indent(void) {
 		putc('\t', stderr);
 }
 
+INTERPOSE(int, pthread_create, uintptr_t tid, uintptr_t attr, void *(*start)(void *), void *arg) //{
+	indent();
+	fprintf(stderr, "pthread_create(%#lx, %#lx, %#lx, %#lx)\n", tid, attr, (uintptr_t) start, (uintptr_t) arg);
+	++nesting;
+
+	int res = pthread_create(tid, attr, start, arg);
+
+	--nesting;
+	indent();
+	fprintf(stderr, "->%d\n", res);
+	return res;
+}
+
 INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	indent();
 	fprintf(stderr, "_dl_allocate_tls(%#lx)\n", (uintptr_t) arg);
@@ -76,3 +89,36 @@ INTERPOSE(void, free, void *arg) //{
 	free(arg);
 	--nesting;
 }
+
+#define INTERPOSE_MMAP(sym) \
+	INTERPOSE(void *, sym, void *addr, size_t length, int prot, int flags, int fd, off_t offset) \
+		indent(); \
+		fprintf(stderr, #sym "(%#lx, %lu, %#x, %#x, %d, %ld)\n", (uintptr_t) addr, length, prot, flags, fd, offset); \
+		++nesting; \
+		\
+		void *res = sym(addr, length, prot, flags, fd, offset); \
+		\
+		--nesting; \
+		indent(); \
+		fprintf(stderr, "->%#lx\n", (uintptr_t) res); \
+		return res; \
+	} \
+
+#define INTERPOSE_MUNMAP(sym) \
+	INTERPOSE(int, sym, void *addr, size_t length) \
+		indent(); \
+		fprintf(stderr, #sym "(%#lx, %lu)\n", (uintptr_t) addr, length); \
+		++nesting; \
+		\
+		int res = sym(addr, length); \
+		\
+		--nesting; \
+		indent(); \
+		fprintf(stderr, "->%d\n", res); \
+		return res; \
+	} \
+
+INTERPOSE_MMAP(mmap)
+INTERPOSE_MMAP(__mmap)
+INTERPOSE_MUNMAP(munmap)
+INTERPOSE_MUNMAP(__munmap)
