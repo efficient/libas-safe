@@ -31,7 +31,15 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	fprintf(stderr, "_dl_allocate_tls(%#lx)\n", (uintptr_t) arg);
 	++nesting;
 
+	#pragma weak ltrace_dl_allocate_tls_arg
+	#pragma weak ltrace_dl_allocate_tls_ret
+	extern void *ltrace_dl_allocate_tls_arg;
+	extern void *ltrace_dl_allocate_tls_ret;
 	void *res = _dl_allocate_tls(arg);
+	if(&ltrace_dl_allocate_tls_arg)
+		ltrace_dl_allocate_tls_arg = arg;
+	if(&ltrace_dl_allocate_tls_ret)
+		ltrace_dl_allocate_tls_ret = res;
 
 	--nesting;
 	indent();
