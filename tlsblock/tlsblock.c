@@ -24,17 +24,18 @@ static thread_local size_t recording_size;
 void _dl_deallocate_tls(void *, bool);
 
 INTERPOSE(void *, _dl_allocate_tls, void *existing) //{
-	if(template) {
-		if(template_addr) {
-			void *res = malloc(template_size);
-			memcpy(res, template_addr, template_size);
-			return res;
-		} else
-			return mmap(NULL, template_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, 0);
+	if(!existing) {
+		if(template) {
+			if(template_addr) {
+				void *res = malloc(template_size);
+				memcpy(res, template_addr, template_size);
+				return res;
+			} else
+				return mmap(NULL, template_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, 0);
+		}
+		recording = true;
 	}
 
-	if(!existing)
-		recording = true;
 	return _dl_allocate_tls(existing);
 }
 
