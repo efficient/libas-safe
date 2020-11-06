@@ -47,6 +47,16 @@ INTERPOSE(void, _dl_deallocate_tls, void *arg, bool dtv) //{
 	--nesting;
 }
 
+INTERPOSE(void, _dl_get_tls_static_info, size_t *size, size_t *align) //{
+	indent();
+	fprintf(stderr, "_dl_get_static_info(%#lx, %#lx)\n", (uintptr_t) size, (uintptr_t) align);
+	++nesting;
+	_dl_get_tls_static_info(size, align);
+	--nesting;
+	indent();
+	fprintf(stderr, "->(%lu, %lu)\n", *size, *align);
+}
+
 INTERPOSE(void *, malloc, size_t arg) //{
 	indent();
 	fprintf(stderr, "malloc(%lu)\n", arg);

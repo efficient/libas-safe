@@ -1,7 +1,7 @@
 override CFLAGS := -Og -g3 -Wall -Wextra -Wpedantic $(CFLAGS)
 override CPPFLAGS := $(CPPFLAGS)
 override LDFLAGS := $(LDFLAGS)
-override LDLIBS := -lpthread $(LDLIBS)
+override LDLIBS := $(LDLIBS)
 
 CC := c99
 
@@ -14,8 +14,10 @@ libsobss.so: sotls.c
 libsodata.so: sotls.c
 
 layout: offset.h
+layout: private LDLIBS += -Wl,--no-as-needed -lpthread -Wl,--as-needed
 
 thread: offset.h
+thread: private LDLIBS += -lpthread
 
 libtlsblock.so libltrace.so: interpose.h
 libtlsblock.so libltrace.so: private CFLAGS += -fpic
