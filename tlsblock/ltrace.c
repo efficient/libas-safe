@@ -47,11 +47,11 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	return res;
 }
 
-INTERPOSE(void, _dl_deallocate_tls, void *arg, bool dtv) //{
+INTERPOSE(void, _dl_deallocate_tls, void *arg, bool full) //{
 	indent();
-	fprintf(stderr, "_dl_deallocate_tls(%#lx, %d)\n", (uintptr_t) arg, dtv);
+	fprintf(stderr, "_dl_deallocate_tls(%#lx, %d)\n", (uintptr_t) arg, full);
 	++nesting;
-	_dl_deallocate_tls(arg, dtv);
+	_dl_deallocate_tls(arg, full);
 	--nesting;
 }
 
