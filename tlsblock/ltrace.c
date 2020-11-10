@@ -47,6 +47,19 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	return res;
 }
 
+INTERPOSE(void *, _dl_allocate_tls_init, void *arg) //{
+	indent();
+	fprintf(stderr, "_dl_allocate_tls_init(%#lx)\n", (uintptr_t) arg);
+	++nesting;
+
+	void *res = _dl_allocate_tls_init(arg);
+
+	--nesting;
+	indent();
+	fprintf(stderr, "->%#lx\n", (uintptr_t) res);
+	return res;
+}
+
 INTERPOSE(void, _dl_deallocate_tls, void *arg, bool full) //{
 	indent();
 	fprintf(stderr, "_dl_deallocate_tls(%#lx, %d)\n", (uintptr_t) arg, full);

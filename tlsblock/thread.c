@@ -22,8 +22,10 @@ int main(void) {
 	++sentinel;
 
 	pthread_t tid;
-	pthread_create(&tid, NULL, thread, (void *) off);
-	pthread_join(tid, NULL);
+	for(unsigned count = 0; count < 2; ++count) {
+		pthread_create(&tid, NULL, thread, (void *) off);
+		pthread_join(tid, NULL);
+	}
 
 	printf("offset: %lu\n", off);
 	return 0;
