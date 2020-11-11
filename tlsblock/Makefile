@@ -20,10 +20,15 @@ thread: offset.h
 thread: private CFLAGS += -rdynamic
 thread: private LDLIBS += -lpthread
 
-libtlsblock.so libltrace.so: interpose.h
-libtlsblock.so libltrace.so: private CFLAGS += -fpic
-libtlsblock.so libltrace.so: private CPPFLAGS += -D_GNU_SOURCE
-libtlsblock.so libltrace.so: private LDLIBS += -ldl
+libltrace.so: interpose.h
+libltrace.so: private CFLAGS += -fpic
+libltrace.so: private CPPFLAGS += -D_GNU_SOURCE
+libltrace.so: private LDLIBS += -ldl
+
+libtlsblock.so: interpose.h
+libtlsblock.so: private CFLAGS += -fpic
+libtlsblock.so: private CPPFLAGS += -D_GNU_SOURCE
+libtlsblock.so: private LDLIBS += -ldl -lpthread
 
 .PHONY: clean
 clean:
