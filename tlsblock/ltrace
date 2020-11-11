@@ -6,4 +6,9 @@ then
 	exit 1
 fi
 
-LD_PRELOAD="`dirname "$0"`/libltrace.so" exec "$@"
+if [ -n "$LD_PRELOAD" ]
+then
+	LD_PRELOAD=":$LD_PRELOAD"
+fi
+
+LD_PRELOAD="`dirname "$0"`/libltrace.so$LD_PRELOAD" exec "$@"
