@@ -135,6 +135,20 @@ INTERPOSE(void, free, void *arg) //{
 		return res; \
 	} \
 
+#define INTERPOSE_MPROTECT(sym) \
+	INTERPOSE(int, sym, void *addr, size_t len, int prot) \
+		indent(); \
+		fprintf(stderr, #sym "(%#lx, %lu, %d)\n", (uintptr_t) addr, len, prot); \
+		++nesting; \
+		\
+		int res = sym(addr, len, prot); \
+		\
+		--nesting; \
+		indent(); \
+		fprintf(stderr, "->%d\n", res); \
+		return res; \
+	} \
+
 #define INTERPOSE_MUNMAP(sym) \
 	INTERPOSE(int, sym, void *addr, size_t length) \
 		indent(); \
@@ -151,5 +165,7 @@ INTERPOSE(void, free, void *arg) //{
 
 INTERPOSE_MMAP(mmap)
 INTERPOSE_MMAP(__mmap)
+INTERPOSE_MPROTECT(mprotect)
+INTERPOSE_MPROTECT(__mprotect)
 INTERPOSE_MUNMAP(munmap)
 INTERPOSE_MUNMAP(__munmap)
