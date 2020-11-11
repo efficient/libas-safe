@@ -35,20 +35,14 @@ int pthread_join(pthread_t, void **);
 // Allocating stackless thread-control block:
 // _dl_allocate_tls(NULL) -> malloc()
 //    (ALLOCATING)
-//
-// Deallocating stackless thread-control block:
-// _dl_deallocate_tls() -> free()...
-//   (DEALLOCATING)          [nop]
 enum state {
 	NONE = 0,
 	SPAWNING,
 	INITIALIZING,
 	ALLOCATING,
-	DEALLOCATING,
 };
 
 static thread_local enum state state;
-static thread_local void *notfreed;
 static thread_local bool recording;
 
 static int template_fd;
@@ -86,7 +80,6 @@ INTERPOSE(int, pthread_create, void *tid, void *attr, void *(*start)(void *), vo
 	int res = pthread_create(tid, attr, start, arg);
 
 	assert(state == NONE);
-	notfreed = NULL;
 	return res;
 }
 
@@ -129,6 +122,7 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 			const uint8_t *reference_addr = (uint8_t *) template_off;
 			template_off = (uintptr_t) res - template_off;
 			alloc_dealloc = res;
+			assert(!((uintptr_t *) ((uintptr_t) reference_addr + template_size))[-1]);
 
 			int fd = mkstemp(template_filename);
 			if(fd < 0) {
@@ -162,6 +156,9 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	} else {
 		size_t offset = stackless_filoff();
 		uint8_t *res = mmap(NULL, template_size - offset, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, offset);
+		const uint8_t **free = (const uint8_t **) (res + template_size - offset - sizeof free);
+		assert(!*free);
+		*free = res;
 		return res + stackless_memoff();
 	}
 }
@@ -201,23 +198,23 @@ INTERPOSE(void, _dl_deallocate_tls, void *arg, bool mallocated) //{
 		_dl_deallocate_tls(arg, false);
 		alloc_dealloc = NULL;
 	} else if(mallocated) {
-		state = DEALLOCATING;
-		_dl_deallocate_tls(arg, true);
-		state = NONE;
-		assert(notfreed);
-		munmap(notfreed, template_size - stackless_off());
-		notfreed = NULL;
+		// We assume that the non-TLS part of the TCB is smaller than a page, and therefore
+		// look for the free location pointer at the end of the same page.
+		void **free = (void **) (((uintptr_t) arg & ~pagemask()) + pagesize() - sizeof free);
+		uint8_t *addr = arg;
+		size_t size = template_size;
+		if(*free) {
+			addr = *free;
+			size -= stackless_filoff();
+		} else
+			addr -= template_off;
+		munmap(addr, size);
 	} // else noop, since the DTV is shared
 }
 
 INTERPOSE(void, free, void *arg) //{
-	if(state != SPAWNING && state != DEALLOCATING) {
+	if(state != SPAWNING)
 		free(arg);
-		return;
-	}
-
-	if(arg)
-		notfreed = arg;
 }
 
 static void *dummy(void *ign) {
