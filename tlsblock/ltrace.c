@@ -113,6 +113,19 @@ INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
 	return res;
 }
 
+INTERPOSE(void *, memset, void *dest, int src, size_t cnt) //{
+	indent();
+	fprintf(stderr, "memset(%#lx, %d, %lu)\n", (uintptr_t) dest, src, cnt);
+	++nesting;
+
+	void *res = memset(dest ,src, cnt);
+
+	--nesting;
+	indent();
+	fprintf(stderr, "->%#lx\n", (uintptr_t) res);
+	return res;
+}
+
 INTERPOSE(void, free, void *arg) //{
 	indent();
 	fprintf(stderr, "free(%#lx)\n", (uintptr_t) arg);
