@@ -29,8 +29,8 @@ int pthread_join(pthread_t, void **);
 //   (SPAWNING)     (INITIALIZING)
 //
 // Reusing existing thread stack from pool:
-// pthread_create() -> free()... -> _dl_allocate_tls_init() -> _dl_allocate_tls()
-//   (SPAWNING)          [nop]          (INITIALIZING)
+// pthread_create() -> free().../memset() -> _dl_allocate_tls_init() -> _dl_allocate_tls()
+//   (SPAWNING)          [nop]    [nop]          (INITIALIZING)
 //
 // Allocating stackless thread-control block:
 // _dl_allocate_tls(NULL) -> malloc()
@@ -215,6 +215,13 @@ INTERPOSE(void, _dl_deallocate_tls, void *arg, bool mallocated) //{
 INTERPOSE(void, free, void *arg) //{
 	if(state != SPAWNING)
 		free(arg);
+}
+
+INTERPOSE(void *, memset, void *dest, int src, size_t cnt) //{
+	if(state != SPAWNING)
+		return memset(dest, src, cnt);
+
+	return dest;
 }
 
 static void *dummy(void *ign) {
