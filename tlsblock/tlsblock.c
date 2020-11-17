@@ -157,7 +157,6 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 		size_t offset = stackless_filoff();
 		uint8_t *res = mmap(NULL, template_size - offset, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, offset);
 		const uint8_t **free = (const uint8_t **) (res + template_size - offset - sizeof free);
-		assert(!*free);
 		*free = res;
 		return res + stackless_memoff();
 	}
