@@ -16,7 +16,7 @@ fi
 
 if [ -n "$LD_PRELOAD" ]
 then
-	LD_PRELOAD="$LD_PRELOAD:"
+	LD_PRELOAD=":$LD_PRELOAD"
 fi
 
-LD_PRELOAD="$LD_PRELOAD`echo libinger/target/*/libinger.so`" LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
+LD_PRELOAD="`echo libinger/target/*/libinger.so`$LD_PRELOAD" LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
