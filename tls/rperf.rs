@@ -1,4 +1,4 @@
-const ITERS: u32 = 2500000;
+const ITERS: u32 = 5000000;
 
 fn main() {
 	extern {
