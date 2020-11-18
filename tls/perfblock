@@ -1,9 +1,9 @@
 #!/bin/sh
 
-if [ "$#" -ne "4" ]
+if [ "$#" -lt "4" ]
 then
 	cat <<-tac
-		USAGE: $0 <outfile> <min> <step> <max>
+		USAGE: $0 <outfile> <min> <step> <max> [cmdline]...
 		where <min>, <step>, and <max> are libset counts
 	tac
 	exit 1
@@ -12,13 +12,14 @@ outfile="$1"
 min="$2"
 step="$3"
 max="$4"
+shift 4
 
 for libsets in `seq "$min" "$step" "$max"`
 do
 	printf "%s" "$libsets" | tee -a "$outfile"
 	for command in "./perfect" "LD_PRELOAD=../tlsblock/libtlsblock.so ./perfect"
 	do
-		printf ",%s" "`eval $command "$libsets" | cut -d" " -f1`" | tee -a "$outfile"
+		printf ",%s" "`eval $command "$libsets" $* | cut -d" " -f1`" | tee -a "$outfile"
 	done
 	echo | tee -a "$outfile"
 done
