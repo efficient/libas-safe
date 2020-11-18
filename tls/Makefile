@@ -7,7 +7,7 @@ override RUSTFLAGS := --edition 2018 $(RUSTFLAGS)
 CC := c99
 RUSTC := rustc
 
-BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf rperf rperfb spawn perflazy perfmcp mem
+BINS := tls tlrs selfref selfthd tcb tcbpic libplugin.so perf rperf rperfb create spawn perflazy perfmcp mem
 
 .PHONY: all
 all: $(BINS)
@@ -20,9 +20,9 @@ tls: private LDLIBS := -linger $(LDLIBS)
 tlrs: private LDFLAGS += -Wl,-R\$$ORIGIN/$(wildcard libinger/target/*) -Wl,-Ilibinger/ld.so
 tlrs: private RUSTFLAGS += -L$(wildcard libinger/target/*/deps)
 
-perf: private CFLAGS += -O2
-perf: private CPPFLAGS += -D_DEFAULT_SOURCE
-perf: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
+perf create: private CFLAGS += -O2
+perf create: private CPPFLAGS += -D_DEFAULT_SOURCE
+perf create: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
 
 rperf: private LDFLAGS += -Wl,-Ilibinger/ld-bench.so
 rperf: private RUSTC := rustdev rustc
