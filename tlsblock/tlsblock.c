@@ -152,6 +152,11 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 
 	if(arg) {
 		state = NONE;
+
+		// Reinitialize everything but the guard page and the control block
+		uintptr_t tcb = (uintptr_t) arg;
+		mmap((void *) (tcb - template_off + pagesize()), template_size - 2 * pagesize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, template_fd, pagesize());
+		pread(template_fd, (void *) (tcb & ~pagemask()), template_off & pagemask(), template_off & ~pagemask());
 		return arg;
 	} else {
 		size_t offset = stackless_filoff();
@@ -179,6 +184,7 @@ INTERPOSE(void *, _dl_allocate_tls_init, void *arg) //{
 	if(state != SPAWNING || !template_fd)
 		return _dl_allocate_tls_init(arg);
 
+	assert(arg);
 	state = INITIALIZING;
 	return _dl_allocate_tls(arg);
 }
