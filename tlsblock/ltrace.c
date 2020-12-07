@@ -151,7 +151,7 @@ INTERPOSE(void, free, void *arg) //{
 #define INTERPOSE_MPROTECT(sym) \
 	INTERPOSE(int, sym, void *addr, size_t len, int prot) \
 		indent(); \
-		fprintf(stderr, #sym "(%#lx, %lu, %d)\n", (uintptr_t) addr, len, prot); \
+		fprintf(stderr, #sym "(%#lx, %lu, %#x)\n", (uintptr_t) addr, len, prot); \
 		++nesting; \
 		\
 		int res = sym(addr, len, prot); \
