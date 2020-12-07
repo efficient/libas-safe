@@ -1,4 +1,4 @@
-override CFLAGS := -Og -g3 -Wall -Wextra -Wpedantic $(CFLAGS)
+override CFLAGS := -O2 -Wall -Wextra -Wpedantic $(CFLAGS)
 override CPPFLAGS := $(CPPFLAGS)
 override LDFLAGS := $(LDFLAGS)
 override LDLIBS := $(LDLIBS)
