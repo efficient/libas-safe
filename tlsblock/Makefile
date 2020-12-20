@@ -21,7 +21,7 @@ thread: private CFLAGS += -rdynamic
 thread: private LDLIBS += -lpthread
 
 libltrace.so: interpose.h
-libltrace.so: private CFLAGS += -fpic
+libltrace.so: private CFLAGS += -Og -fpic
 libltrace.so: private CPPFLAGS += -D_GNU_SOURCE
 libltrace.so: private LDLIBS += -ldl
 
