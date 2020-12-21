@@ -25,6 +25,10 @@ static inline void dumpdtv(const void *tcb, size_t dtvnm, size_t dtvsz) {
 	for(ssize_t idx = -1; idx < (ssize_t) dtvnm - 1; ++idx) {
 		indent();
 		fprintf(stderr, "dtv[%ld]<-(%#lx, %#lx)\n", idx, dtv[idx][0], dtv[idx][1]);
+		if(dtv[idx][0]) {
+			indent();
+			fprintf(stderr, "       offset %#lx\n", (uintptr_t) tcb - dtv[idx][0]);
+		}
 	}
 }
 
