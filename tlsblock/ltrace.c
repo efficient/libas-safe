@@ -1,5 +1,6 @@
 #include "interpose.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,10 +8,24 @@
 #define BOOTSTRAP_BYTES 32
 
 static thread_local unsigned nesting;
+static thread_local size_t callocnm;
+static thread_local size_t callocsz;
 
 static inline void indent(void) {
 	for(unsigned count = 0; count < nesting; ++count)
 		putc('\t', stderr);
+}
+
+static inline void dumpdtv(const void *tcb, size_t dtvnm, size_t dtvsz) {
+	if(!dtvnm || !dtvsz)
+		return;
+
+	const uintptr_t (*dtv)[2] = ((const uintptr_t (**)[2]) tcb)[1];
+	assert(dtvsz == sizeof *dtv);
+	for(ssize_t idx = -1; idx < (ssize_t) dtvnm - 1; ++idx) {
+		indent();
+		fprintf(stderr, "dtv[%ld]<-(%#lx, %#lx)\n", idx, dtv[idx][0], dtv[idx][1]);
+	}
 }
 
 INTERPOSE(int, pthread_create, uintptr_t tid, uintptr_t attr, void *(*start)(void *), void *arg) //{
@@ -31,6 +46,9 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	fprintf(stderr, "_dl_allocate_tls(%#lx)\n", (uintptr_t) arg);
 	++nesting;
 
+	callocnm = 0;
+	callocsz = 0;
+
 	#pragma weak ltrace_dl_allocate_tls_arg
 	#pragma weak ltrace_dl_allocate_tls_ret
 	extern void *ltrace_dl_allocate_tls_arg;
@@ -40,6 +58,10 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 		ltrace_dl_allocate_tls_arg = arg;
 	if(&ltrace_dl_allocate_tls_ret)
 		ltrace_dl_allocate_tls_ret = res;
+
+	dumpdtv(res, callocnm, callocsz);
+	callocnm = 0;
+	callocsz = 0;
 
 	--nesting;
 	indent();
@@ -106,6 +128,8 @@ INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
 	++nesting;
 
 	void *res = calloc(nmemb, size);
+	callocnm = nmemb;
+	callocsz = size;
 
 	--nesting;
 	indent();
