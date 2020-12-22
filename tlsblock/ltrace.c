@@ -16,11 +16,18 @@ static inline void indent(void) {
 		putc('\t', stderr);
 }
 
-static inline void dumpdtv(const void *tcb, size_t dtvnm, size_t dtvsz) {
-	if(!dtvnm || !dtvsz)
+static inline void dumpdtv(const void *tcb) {
+	const uintptr_t (*dtv)[2] = ((const uintptr_t (**)[2]) tcb)[1];
+	if(!dtv)
 		return;
 
-	const uintptr_t (*dtv)[2] = ((const uintptr_t (**)[2]) tcb)[1];
+	static size_t dtvnm, dtvsz;
+	if(!dtvnm || !dtvsz) {
+		dtvnm = callocnm;
+		dtvsz = callocsz;
+	}
+	assert(dtvnm);
+	assert(dtvsz);
 	assert(dtvsz == sizeof *dtv);
 	for(ssize_t idx = -1; idx < (ssize_t) dtvnm - 1; ++idx) {
 		indent();
@@ -63,7 +70,7 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	if(&ltrace_dl_allocate_tls_ret)
 		ltrace_dl_allocate_tls_ret = res;
 
-	dumpdtv(res, callocnm, callocsz);
+	dumpdtv(res);
 	callocnm = 0;
 	callocsz = 0;
 
