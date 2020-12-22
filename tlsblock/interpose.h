@@ -8,7 +8,7 @@
 #define INTERPOSE(ret, fun, ...) \
 	ret fun(__VA_ARGS__) { \
 		static ret (*fun)(__VA_ARGS__) = NULL; \
-		static thread_local bool bootstrapping = false; \
+		static thread_local volatile bool bootstrapping = false; \
 		if(!fun && !bootstrapping) { \
 			bootstrapping = true; \
 			*(void **) &fun = dlsym(RTLD_NEXT, #fun); \
