@@ -8,15 +8,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <threads.h>
 #include <unistd.h>
 
 // NB: This library assumes that no further shared libraries will be dynamically loaded after it
-//     is initialized.  Should this condition be violated, Bad Things might happen, including:
-//     * A realloc() call might move the shared DTV, leaving dangling pointers!
-//     * The free() interposition overflow the stack due to a __tls_get_addr() bootstrapping cycle.
-//     * Etc., etc.
-//     In order to support this use case, we would need to support (lazily?) individualized DTVs.
+//     is initialized.  Should this condition be violated, Bad Things might happen, e.g., the
+//     free() interposition could overflow the stack due to a __tls_get_addr() bootstrapping cycle.
+
+#define BOOTSTRAP_BYTES 32
+#define PRE_DTV_ENTRIES 2
 
 #define FILENAME "/tmp/libtlsblock-XXXXXX"
 
@@ -29,8 +30,8 @@ int pthread_join(pthread_t, void **);
 //   (SPAWNING)     (INITIALIZING)
 //
 // Reusing existing thread stack from pool:
-// pthread_create() -> free().../memset() -> _dl_allocate_tls_init() -> _dl_allocate_tls()
-//   (SPAWNING)          [nop]    [nop]          (INITIALIZING)
+// pthread_create() -> _dl_allocate_tls_init() -> _dl_allocate_tls()
+//   (SPAWNING)           (INITIALIZING)
 //
 // Allocating stackless thread-control block:
 // _dl_allocate_tls(NULL) -> malloc()
@@ -50,6 +51,8 @@ static char template_filename[] = FILENAME;
 static size_t template_size;
 static size_t template_off;
 static size_t template_tlssz;
+static ssize_t *template_dtv;
+static size_t template_dtvlen;
 
 static const void *alloc_dealloc;
 
@@ -142,7 +145,17 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 		} else {
 			assert(state == NONE);
 			assert(template_tlssz);
+			assert(template_dtvlen);
 			template_tlssz = (uintptr_t) res - template_tlssz;
+
+			const ssize_t *dtv = ((ssize_t **) res)[1] - PRE_DTV_ENTRIES;
+			template_dtv = malloc(template_dtvlen * sizeof *template_dtv);
+			memcpy(template_dtv, dtv, (PRE_DTV_ENTRIES + 1) * sizeof *template_dtv);
+			for(size_t entry = PRE_DTV_ENTRIES + 1; entry < template_dtvlen; ++entry)
+				if(dtv[entry] > 0)
+					template_dtv[entry] = (ssize_t) res - dtv[entry];
+				else
+					template_dtv[entry] = dtv[entry];
 		}
 		return res;
 	}
@@ -150,6 +163,7 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 	if((arg && state != INITIALIZING) || !template_fd)
 		return _dl_allocate_tls(arg);
 
+	uint8_t *res = arg;
 	if(arg) {
 		state = NONE;
 
@@ -157,14 +171,25 @@ INTERPOSE(void *, _dl_allocate_tls, void *arg) //{
 		uintptr_t tcb = (uintptr_t) arg;
 		mmap((void *) (tcb - template_off + pagesize()), template_size - 2 * pagesize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED, template_fd, pagesize());
 		pread(template_fd, (void *) (tcb & ~pagemask()), template_off & pagemask(), template_off & ~pagemask());
-		return arg;
 	} else {
 		size_t offset = stackless_filoff();
-		uint8_t *res = mmap(NULL, template_size - offset, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, offset);
+		res = mmap(NULL, template_size - offset, PROT_READ | PROT_WRITE, MAP_PRIVATE, template_fd, offset);
 		const uint8_t **free = (const uint8_t **) (res + template_size - offset - sizeof free);
 		*free = res;
-		return res + stackless_memoff();
+		res += stackless_memoff();
 	}
+
+	ssize_t *dtv = malloc(template_dtvlen * sizeof *dtv);
+	memcpy(dtv, template_dtv, (PRE_DTV_ENTRIES + 1) * sizeof *dtv);
+	for(size_t entry = PRE_DTV_ENTRIES + 1; entry < template_dtvlen; ++entry)
+		if(template_dtv[entry] > 0)
+			dtv[entry] = (ssize_t) res - template_dtv[entry];
+		else
+			dtv[entry] = template_dtv[entry];
+
+	ssize_t **dtvp = ((ssize_t **) res) + 1;
+	*dtvp = dtv + PRE_DTV_ENTRIES;
+	return res;
 }
 
 INTERPOSE(void *, malloc, size_t arg) //{
@@ -178,6 +203,22 @@ INTERPOSE(void *, malloc, size_t arg) //{
 	template_tlssz = (uintptr_t) res;
 	state = NONE;
 	return res;
+}
+
+INTERPOSE(void *, calloc, size_t nmemb, size_t size) //{
+	if(bootstrapping) {
+		static thread_local uint8_t buf[BOOTSTRAP_BYTES] = {0};
+		if(nmemb * size != sizeof buf) {
+			fputs("libtlsblock error: Size mismatch in calloc() bootstrap\n", stderr);
+			abort();
+		}
+		return buf;
+	}
+
+	if(recording)
+		template_dtvlen = (nmemb * size) / sizeof *template_dtv;
+
+	return calloc(nmemb, size);
 }
 
 INTERPOSE(void *, _dl_allocate_tls_init, void *arg) //{
@@ -198,9 +239,11 @@ INTERPOSE(void, _dl_deallocate_tls, void *arg, bool mallocated) //{
 		return;
 	}
 
+	// Deallocate DTV.
+	_dl_deallocate_tls(arg, false);
+
 	if(arg == alloc_dealloc) {
 		assert(!mallocated);
-		_dl_deallocate_tls(arg, false);
 		alloc_dealloc = NULL;
 	} else if(mallocated) {
 		// We assume that the non-TLS part of the TCB is smaller than a page, and therefore
@@ -214,19 +257,7 @@ INTERPOSE(void, _dl_deallocate_tls, void *arg, bool mallocated) //{
 		} else
 			addr -= template_off;
 		munmap(addr, size);
-	} // else noop, since the DTV is shared
-}
-
-INTERPOSE(void, free, void *arg) //{
-	if(state != SPAWNING)
-		free(arg);
-}
-
-INTERPOSE(void *, memset, void *dest, int src, size_t cnt) //{
-	if(state != SPAWNING)
-		return memset(dest, src, cnt);
-
-	return dest;
+	}
 }
 
 static void *dummy(void *ign) {
@@ -255,6 +286,8 @@ static void tlsblock_cleanup(void) {
 
 	close(atomic_exchange(&template_fd, 0));
 	unlink(template_filename);
+	free(template_dtv);
+	template_dtvlen = 0;
 	// Leave sizes and offset as they may still be needed for deallocation!
 }
 
