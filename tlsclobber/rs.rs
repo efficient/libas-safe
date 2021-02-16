@@ -1,4 +1,16 @@
+#[allow(dead_code)]
+mod prctl;
+
 use lazy_static::lazy_static;
+use libc::puts;
+use prctl::ARCH_GET_FS;
+use std::ffi::CString;
+use std::mem::MaybeUninit;
+use std::os::raw::c_uint;
+extern {
+	fn _dl_allocate_tls_init(_: *mut TcbT);
+	fn arch_prctl(_: c_uint, _: *mut *mut TcbT);
+}
 
 lazy_static! {
 	static ref GLOBAL: Ure<'static> = "GLOBAL".into();
@@ -9,6 +21,14 @@ thread_local! {
 
 fn main() {
 	println!("{:p}", &*GLOBAL);
+	LOCAL.with(|local| println!("{:p}", local));
+
+	unsafe {
+		let mut tcb = MaybeUninit::uninit();
+		arch_prctl(ARCH_GET_FS, tcb.as_mut_ptr());
+		_dl_allocate_tls_init(tcb.assume_init());
+	}
+
 	LOCAL.with(|local| println!("{:p}", local));
 }
 
@@ -24,6 +44,11 @@ impl<'a> From<&'a str> for Ure<'a> {
 impl Drop for Ure<'_> {
 	fn drop(&mut self) {
 		let Self (name) = self;
-		eprintln!("Ure::drop({})", name);
+		let name = CString::new(format!("Ure::drop({})", name)).unwrap();
+		unsafe {
+			puts(name.into_raw());
+		}
 	}
 }
+
+enum TcbT {}

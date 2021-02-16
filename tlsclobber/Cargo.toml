@@ -9,3 +9,4 @@ path = "rs.rs"
 
 [dependencies]
 lazy_static = "*"
+libc = "*"
