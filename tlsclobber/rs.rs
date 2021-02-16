@@ -8,6 +8,7 @@ use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::os::raw::c_uint;
 extern {
+	fn __call_tls_dtors();
 	fn _dl_allocate_tls_init(_: *mut TcbT);
 	fn arch_prctl(_: c_uint, _: *mut *mut TcbT);
 }
@@ -26,6 +27,9 @@ fn main() {
 	unsafe {
 		let mut tcb = MaybeUninit::uninit();
 		arch_prctl(ARCH_GET_FS, tcb.as_mut_ptr());
+		if cfg!(feature = "dtors") {
+			__call_tls_dtors();
+		}
 		_dl_allocate_tls_init(tcb.assume_init());
 	}
 

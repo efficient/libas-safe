@@ -7,6 +7,9 @@ edition = "2018"
 name = "rs"
 path = "rs.rs"
 
+[features]
+dtors = []
+
 [dependencies]
 lazy_static = "*"
 libc = "*"

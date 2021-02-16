@@ -5,6 +5,7 @@ using std::cout;
 using std::endl;
 extern "C" {
 	struct tcb_t;
+	void __call_tls_dtors();
 	void _dl_allocate_tls_init(tcb_t *);
 	void arch_prctl(int, tcb_t **);
 }
@@ -30,6 +31,9 @@ int main() {
 
 	tcb_t *tcb;
 	arch_prctl(ARCH_GET_FS, &tcb);
+#ifdef DTORS
+	__call_tls_dtors();
+#endif
 	_dl_allocate_tls_init(tcb);
 
 	cout << &local << endl;
