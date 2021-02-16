@@ -1,12 +1,14 @@
-static mut GLOBAL: Option<Ure<'static>> = None;
+use lazy_static::lazy_static;
+
+lazy_static! {
+	static ref GLOBAL: Ure<'static> = "GLOBAL".into();
+}
 thread_local! {
 	static LOCAL: Ure<'static> = "LOCAL".into();
 }
 
 fn main() {
-	unsafe {
-		GLOBAL.replace("GLOBAL".into());
-	}
+	println!("{:p}", &*GLOBAL);
 	LOCAL.with(|local| println!("{:p}", local));
 }
 

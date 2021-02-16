@@ -1,0 +1,11 @@
+[package]
+name = "rs"
+version = "0.0.0"
+edition = "2018"
+
+[[bin]]
+name = "rs"
+path = "rs.rs"
+
+[dependencies]
+lazy_static = "*"
