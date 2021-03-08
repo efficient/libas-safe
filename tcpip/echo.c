@@ -1,8 +1,39 @@
+#include "libinger/libinger.h"
+
+#define pause libc_pause
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#undef pause
+
+#define US
+#define MS * 1000
+#define S * 1000000
+
+#define TIMEOUT 3 S
+
+static void listener(int *socketstatus) {
+	struct sockaddr sa;
+	socklen_t sz = sizeof sa;
+	int fd = accept(*socketstatus, &sa, &sz);
+	if(fd < 0) {
+		perror("accept()");
+		*socketstatus = -6;
+		return;
+	}
+
+	char host[NI_MAXHOST];
+	if(getnameinfo(&sa, sz, host, sizeof host, NULL, 0, NI_NAMEREQD))
+		dprintf(fd, "getnameinfo(): %s\n", strerror(errno));
+	else
+		dprintf(fd, "HELLO %s\n", host);
+
+	char wait;
+	read(fd, &wait, sizeof wait);
+	close(fd);
+}
 
 int main(int argc, char **argv) {
 	if(argc < 2 || argc > 3) {
@@ -21,7 +52,6 @@ int main(int argc, char **argv) {
 	}
 
 	int status = 0;
-	int fd = -1;
 	int sock = socket(ai->ai_family, ai->ai_socktype, 0);
 	if(sock < 0) {
 		perror("socket()");
@@ -39,27 +69,14 @@ int main(int argc, char **argv) {
 		goto cleanup;
 	}
 
-	struct sockaddr sa;
-	socklen_t sz = sizeof sa;
-	fd = accept(sock, &sa, &sz);
-	if(fd < 0) {
-		perror("accept()");
-		status = 6;
-		goto cleanup;
-	}
-
-	char host[NI_MAXHOST];
-	if(getnameinfo(&sa, sz, host, sizeof host, NULL, 0, NI_NAMEREQD))
-		dprintf(fd, "getnameinfo(): %s\n", strerror(errno));
-	else
-		dprintf(fd, "HELLO %s\n", host);
-
-	char wait;
-	read(fd, &wait, sizeof wait);
+	int sockstat = sock;
+	linger_t listening = launch((void (*)(void *)) listener, TIMEOUT, &sockstat);
+	if(!listening.is_complete)
+		cancel(&listening);
+	if(sockstat < 0)
+		status = -sockstat;
 
 	cleanup:
-	if(fd >= 0)
-		close(fd);
 	if(sock >= 0)
 		close(sock);
 	freeaddrinfo(ai);
