@@ -1,0 +1,15 @@
+[package]
+name = "symbol"
+version = "0.0.0"
+edition = "2018"
+
+[[bin]]
+name = "getfn"
+path = "getfn.rs"
+
+[[bin]]
+name = "getopt"
+path = "getopt.rs"
+
+[dependencies]
+libc = "*"

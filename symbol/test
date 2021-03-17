@@ -1,0 +1,6 @@
+#!/bin/sh
+
+make getfn && LIBGOTCHA_NUMGROUPS=1 ./getfn
+make getopt && LIBGOTCHA_NUMGROUPS=1 ./getopt bc: a -b -c d
+LIBGOTCHA_NUMGROUPS=1 cargo run --bin getfn
+LIBGOTCHA_NUMGROUPS=1 cargo run --bin getopt bc: a -b -c d
