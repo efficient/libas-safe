@@ -33,6 +33,15 @@ Building _libas-safe_
  1. `$ make -Clibgotcha libgotcha.a libgotcha.mk`
  1. `$ make`
 
+Note that the example program does not deadlock on some glibcs newer than 2.29 (at least 2.33).  To
+build and run it against a non-installed copy of an older dynamic linker, do:
+ 1. `$ make signal LDFLAGS=-Wl,-I.../lib/ld-linux-x86-64.so.2`
+ 1. `$ ./signal`
+
+To avoid symbol version clashes in libas-safe, you will need to build it against that same glibc:
+ 1. `$ make LDFLAGS=-L.../lib`
+ 1. `$ LD_PRELOAD=./libas-safe.so ./signal`
+
 Using _libas-safe_
 ------------------
 Either link your program against `libas-safe.so` or request it at load time via `$LD_PRELOAD`.
