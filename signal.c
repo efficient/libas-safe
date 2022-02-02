@@ -1,32 +1,11 @@
 #include <sys/time.h>
-#include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 
-static void handler(int ign) {
-	(void) ign;
-
-	int erryes = errno;
-
-	static char acter = '|';
-	printf("%c\b", acter);
-	fflush(stdout);
-	switch(acter) {
-	case '|':
-		acter = '/';
-		break;
-	case '/':
-		acter = '-';
-		break;
-	case '-':
-		acter = '\\';
-		break;
-	case '\\':
-		acter = '|';
-		break;
-	}
-
-	errno = erryes;
+static void handler(int ignored) {
+	(void) ignored;
+	printf("In signal handler\n");
 }
 
 int main(void) {
@@ -36,7 +15,7 @@ int main(void) {
 	sigaction(SIGALRM, &sa, NULL);
 
 	struct timeval tv = {
-		.tv_usec = 500000,
+		.tv_sec = 1,
 	};
 	struct itimerval it = {
 		.it_interval = tv,
@@ -44,7 +23,7 @@ int main(void) {
 	};
 	setitimer(ITIMER_REAL, &it, NULL);
 
-	for(;;)
+	while(true)
 		fflush(stdout);
 
 	return 0;
