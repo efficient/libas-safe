@@ -15,7 +15,7 @@ int main(void) {
 	sigaction(SIGALRM, &sa, NULL);
 
 	struct timeval tv = {
-		.tv_sec = 1,
+		.tv_usec = 10000,
 	};
 	struct itimerval it = {
 		.it_interval = tv,
@@ -23,8 +23,25 @@ int main(void) {
 	};
 	setitimer(ITIMER_REAL, &it, NULL);
 
-	while(true)
+	char acter = '|';
+	while(true) {
+		printf("%c\b", acter);
 		fflush(stdout);
+		switch(acter) {
+		case '|':
+			acter = '/';
+			break;
+		case '/':
+			acter = '-';
+			break;
+		case '-':
+			acter = '\\';
+			break;
+		case '\\':
+			acter = '|';
+			break;
+		}
+	}
 
 	return 0;
 }
