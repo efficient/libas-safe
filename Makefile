@@ -22,6 +22,6 @@ endif
 
 .PHONY: clean
 clean:
-	$(RM) *.a *.o *.so
+	$(RM) *.a *.o *.so signal
 
 include libgotcha/libgotcha.mk
