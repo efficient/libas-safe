@@ -19,4 +19,4 @@ then
 	LD_PRELOAD=":$LD_PRELOAD"
 fi
 
-LD_PRELOAD="`echo libinger/target/*/libinger.so`$LD_PRELOAD" LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
+LD_PRELOAD="./libdeferred.so$LD_PRELOAD" LIBGOTCHA_NUMGROUPS="$groups" LIBGOTCHA_NOGLOBALS= exec ./$script
